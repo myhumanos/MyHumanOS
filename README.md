@@ -1,16 +1,21 @@
-## Hi there 👋
+# MyHumanOS Website
 
-<!--
-**myhumanos/MyHumanOS** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+Static launch website for MyHumanOS. Ready for Cloudflare Pages.
 
-Here are some ideas to get you started:
+## Deploy on Cloudflare Pages
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+1. Create a GitHub repository.
+2. Upload all files from this folder.
+3. Go to Cloudflare → Workers & Pages → Create → Pages → Connect to Git.
+4. Select your repository.
+5. Framework preset: None / Static HTML.
+6. Build command: leave empty.
+7. Output directory: `/` or leave empty.
+8. Deploy.
+
+## Edit newsletter link
+
+The Beehiiv links currently point to:
+https://myhumanos.beehiiv.com/p/myhumanos
+
+If needed, replace them in `index.html`.

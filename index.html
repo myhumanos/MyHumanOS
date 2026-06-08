@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MyHumanOS | Human Design Chart & Daily Transits</title>
+  <meta name="description" content="Calculate a launch-version Human Design profile, explore daily transits and join the MyHumanOS newsletter for practical self-discovery guidance." />
+  <meta property="og:title" content="MyHumanOS | Your Daily Human Design Operating System" />
+  <meta property="og:description" content="Understand your energy. Navigate your day. Build your Human OS." />
+  <meta property="og:type" content="website" />
+  <meta name="theme-color" content="#0b1020" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="orb orb-one"></div><div class="orb orb-two"></div>
+  <header class="site-header">
+    <a class="brand" href="#top"><span class="brand-mark">☾</span><span>MyHumanOS</span></a>
+    <nav class="nav"><a href="#chart">Chart</a><a href="#features">Features</a><a href="#daily">Daily OS</a><a href="#newsletter">Newsletter</a></nav>
+    <a class="header-cta" href="#chart">Calculate chart</a>
+  </header>
+  <main id="top">
+    <section class="hero section">
+      <div class="hero-copy">
+        <p class="eyebrow">Human Design · Transits · Reflection · AI Guidance</p>
+        <h1>Understand your energy. Navigate your day. Build your Human OS.</h1>
+        <p class="hero-text">MyHumanOS turns Human Design and daily transits into clear, practical guidance — so you know what today is asking from you, without drowning in confusing chart language.</p>
+        <div class="hero-actions"><a class="btn primary" href="#chart">Calculate your design</a><a class="btn secondary" href="https://myhumanos.beehiiv.com/p/myhumanos" target="_blank" rel="noopener">Join newsletter</a></div>
+        <div class="trust-row"><span>Built for Reflectors, seekers and self-explorers.</span><span>Free launch version.</span></div>
+      </div>
+      <div class="hero-card">
+        <div class="card-topline"><span class="pill">Today's OS</span><span class="moon">◐</span></div>
+        <h2>Daily Transit Guidance</h2><p class="muted">Your energetic weather, translated into real life.</p>
+        <div class="insight-list"><div><span class="label">Theme</span><strong>Clarity through reflection</strong></div><div><span class="label">Do</span><strong>Notice what your body says before you decide</strong></div><div><span class="label">Don't</span><strong>Force certainty just because others are moving fast</strong></div></div>
+      </div>
+    </section>
+
+    <section id="chart" class="section calculator-section">
+      <div class="section-heading"><p class="eyebrow">Launch tool</p><h2>Calculate your Human Design preview.</h2><p>This free version creates a deterministic profile preview from your birth data. The full Swiss Ephemeris version will replace it later for professional accuracy.</p></div>
+      <div class="calculator-grid">
+        <form id="chartForm" class="calc-card">
+          <label>Full name<input id="name" type="text" placeholder="Justin Jungbluth" required></label>
+          <div class="form-row"><label>Birth date<input id="date" type="date" required></label><label>Birth time<input id="time" type="time" required></label></div>
+          <label>Birth place<input id="place" type="text" placeholder="Krefeld, Germany" required></label>
+          <button class="btn primary full" type="submit">Generate chart preview</button>
+          <p class="form-note">Prototype: good for testing the website flow. Not yet a final Human Design calculation.</p>
+        </form>
+        <div id="chartResult" class="result-card empty">
+          <span class="result-kicker">Your chart will appear here</span>
+          <h3>Enter your birth data to start.</h3>
+          <p>The result shows type, profile, strategy, authority, gates and a short guidance text.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="section features"><div class="section-heading"><p class="eyebrow">The vision</p><h2>Your personal self-discovery dashboard.</h2><p>Start simple with daily emails. Grow into a full Human Design operating system.</p></div><div class="grid three"><article class="feature-card"><span class="icon">◎</span><h3>Human Design Profile</h3><p>Birth data becomes a clean profile: type, profile, centers, gates and your personal energetic pattern.</p></article><article class="feature-card"><span class="icon">☽</span><h3>Daily Transits</h3><p>See what is active today, how long it stays, what changed and what it means for your everyday life.</p></article><article class="feature-card"><span class="icon">✦</span><h3>AI Reflection</h3><p>A future AI guide that remembers your profile and explains transits, relationships and decisions in your language.</p></article></div></section>
+    <section id="daily" class="section daily"><div class="daily-panel"><div><p class="eyebrow">Example format</p><h2>One daily practice. No spiritual overwhelm.</h2><p>Each update is short enough to actually use, but deep enough to make you pause.</p></div><div class="timeline"><div class="timeline-item"><span>1</span><div><strong>Current transit</strong><p>What energy is active right now?</p></div></div><div class="timeline-item"><span>2</span><div><strong>Meaning in real life</strong><p>What does this change in behavior, emotion or focus?</p></div></div><div class="timeline-item"><span>3</span><div><strong>Dos, don'ts & journal question</strong><p>A tiny daily ritual to stay connected to yourself.</p></div></div></div></div></section>
+    <section id="newsletter" class="section cta-section"><div class="cta-card"><p class="eyebrow">Launch version</p><h2>Join the MyHumanOS newsletter.</h2><p>Get early access, daily Human Design reflections and the first version of the MyHumanOS ecosystem.</p><form class="email-form" action="https://myhumanos.beehiiv.com/subscribe" method="get" target="_blank"><input type="email" name="email" placeholder="your@email.com" required><button type="submit">Join free</button></form><a class="small-link" href="https://myhumanos.beehiiv.com/p/myhumanos" target="_blank" rel="noopener">Open newsletter page →</a></div></section>
+  </main>
+  <footer class="footer"><span>© <span id="year"></span> MyHumanOS</span><span>Human Design for the everyday self.</span></footer>
+  <script src="script.js"></script>
+</body>
+</html>
