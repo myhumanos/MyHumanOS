@@ -183,8 +183,8 @@ function publicChartCard(entry) {
         </div>
         <time datetime="${escapeHtml(entry.createdAt || "")}">${escapeHtml(formatPublicDate(entry.createdAt))}</time>
       </div>
-      <strong>${escapeHtml(entry.type || "Human Design")} · Profil ${escapeHtml(entry.profile || "n/a")}</strong>
-      <p class="public-meta">${escapeHtml(entry.authority || "Autoritaet offen")} · ${escapeHtml(entry.strategy || "Strategie offen")}${centers ? ` · ${escapeHtml(centers)}` : ""}</p>
+      <strong>${escapeHtml(entry.type || "Human Design")} - Profil ${escapeHtml(entry.profile || "n/a")}</strong>
+      <p class="public-meta">${escapeHtml(entry.authority || "Autoritaet offen")} - ${escapeHtml(entry.strategy || "Strategie offen")}${centers ? ` - ${escapeHtml(centers)}` : ""}</p>
       ${gates.length ? `<div class="public-gates">${gates.map((gate) => `<b>Tor ${escapeHtml(gate.gate)}${gate.line ? `.${escapeHtml(gate.line)}` : ""}</b>`).join("")}</div>` : ""}
     </article>
   `;
@@ -299,7 +299,7 @@ function renderReading(chart, payload) {
     <div class="reading-header">
       <span class="tiny-label">${chart.isMock ? "Preview" : escapeHtml(chart.provider || "Swiss Ephemeris")}</span>
       <h2>${escapeHtml(chart.type || "Human Design Preview")}</h2>
-      <p>${escapeHtml(payload.name || "Dein Chart")} · ${escapeHtml(payload.birthPlace)} · ${escapeHtml(payload.birthDate)} · ${escapeHtml(payload.birthTime)}</p>
+      <p>${escapeHtml(payload.name || "Dein Chart")} - ${escapeHtml(payload.birthPlace)} - ${escapeHtml(payload.birthDate)} - ${escapeHtml(payload.birthTime)}</p>
     </div>
 
     <div class="core-grid">
@@ -539,7 +539,7 @@ function drawChartLabel(chart) {
   context.fillText(chart.type || "Human Design", 450, 52);
   context.fillStyle = colors.muted;
   context.font = "800 15px Inter, sans-serif";
-  context.fillText(`${chart.authority || "Autoritaet"} · Profil ${chart.profile || "n/a"}`, 450, 82);
+  context.fillText(`${chart.authority || "Autoritaet"} - Profil ${chart.profile || "n/a"}`, 450, 82);
 }
 
 function roundedRect(x, y, width, height, radius) {
@@ -574,8 +574,8 @@ function practiceForType(type) {
 function formatPoint(point) {
   const degree = Number.isFinite(point.degree) ? `${point.degree.toFixed(1)} Grad ` : "";
   const sign = point.sign || "";
-  const house = point.house ? ` · Haus ${point.house}` : "";
-  const retrograde = point.retrograde ? " · ruecklaeufig" : "";
+  const house = point.house ? ` - Haus ${point.house}` : "";
+  const retrograde = point.retrograde ? " - ruecklaeufig" : "";
 
   return `${degree}${sign}${house}${retrograde}`.trim();
 }
