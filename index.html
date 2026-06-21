@@ -3,84 +3,227 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="MyHumanOS berechnet ein deutsches Human-Design-Dashboard mit Swiss-Ephemeris-Daten.">
-    <title>MyHumanOS | Human Design Dashboard</title>
+    <meta name="description" content="MyHumanOS ist ein astrologisch inspiriertes Human-Design-Sanctuary mit Chart-Rechner, Bodygraph Preview und deutschem Lexikon.">
+    <title>MyHumanOS | Human Design Sanctuary</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
-    <main class="app-shell">
-      <section class="hero-workspace" aria-labelledby="page-title">
-        <div class="brand-row">
-          <div class="brand-mark">MH</div>
-          <div>
+    <div class="site-glow" aria-hidden="true"></div>
+
+    <header class="sanctuary-hero" id="top">
+      <nav class="topbar" aria-label="Hauptnavigation">
+        <a class="brand-row" href="#top">
+          <span class="brand-mark">MH</span>
+          <span>
             <strong>MyHumanOS</strong>
-            <span>Swiss Ephemeris Human Design Preview</span>
+            <small>Human Design Sanctuary</small>
+          </span>
+        </a>
+        <div class="nav-links">
+          <a href="#chart">Chart</a>
+          <a href="#typen">Typen</a>
+          <a href="#profile">Profile</a>
+          <a href="#kompass">Kompass</a>
+        </div>
+      </nav>
+
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow">Astrologischer Rueckzugsort</p>
+          <h1>Betritt den Raum, in dem dein wahres Selbst leiser und klarer wird.</h1>
+          <p class="lede">MyHumanOS liest Geburtszeit, Ort, Koordinaten und Swiss-Ephemeris-Positionen als Spiegel fuer Typ, Autoritaet, Profil, Tore und den Rhythmus, der unter deinen Erwartungen wartet.</p>
+          <div class="hero-actions">
+            <a class="primary-action link-action" href="#chart">Chart oeffnen</a>
+            <a class="ghost-action" href="#kompass">Lexikon erkunden</a>
           </div>
         </div>
 
-        <div class="intro">
-          <p class="eyebrow">Dein energetisches Betriebssystem</p>
-          <h1 id="page-title">Human Design, das sich wie eine App anf&uuml;hlt.</h1>
-          <p class="lede">
-            Berechne Gates, Linien, Profil-Hinweise, Typ, Strategie, Autorit&auml;t, Selbst und Nicht-Selbst auf Basis echter Swiss-Ephemeris-Positionen.
-          </p>
-        </div>
+        <figure class="hero-altar" aria-label="Amethyst-Altar mit astrologischem Kreis">
+          <div class="moon"></div>
+          <div class="zodiac-table">
+            <span></span><span></span><span></span><span></span>
+            <b></b>
+          </div>
+          <div class="crystal c1"></div>
+          <div class="crystal c2"></div>
+          <div class="crystal c3"></div>
+          <div class="candle flame-one"></div>
+          <div class="candle flame-two"></div>
+        </figure>
+      </div>
+    </header>
 
-        <form class="chart-form" id="chart-form">
-          <label>
-            <span>Name</span>
-            <input id="name" name="name" type="text" autocomplete="name" placeholder="Justin">
-          </label>
-          <label>
-            <span>Geburtsdatum</span>
-            <input id="birth-date" name="birthDate" type="date" required>
-          </label>
-          <label>
-            <span>Geburtszeit</span>
-            <input id="birth-time" name="birthTime" type="time" required>
-          </label>
-          <label>
-            <span>Zeitbasis</span>
-            <select id="timezone" name="timezone">
-              <option value="Europe/Berlin" selected>Deutsche Zeit (Europe/Berlin)</option>
-              <option value="auto">Automatisch nach Geburtsort</option>
-              <option value="Europe/Vienna">&Ouml;sterreich (Europe/Vienna)</option>
-              <option value="Europe/Zurich">Schweiz (Europe/Zurich)</option>
-              <option value="Europe/London">UK (Europe/London)</option>
-              <option value="America/New_York">US Ostk&uuml;ste (New York)</option>
-              <option value="America/Los_Angeles">US Westk&uuml;ste (Los Angeles)</option>
-            </select>
-          </label>
-          <label class="wide">
-            <span>Geburtsort</span>
-            <input id="birth-place" name="birthPlace" type="text" autocomplete="address-level2" placeholder="z. B. Berlin, DE oder 52.5200, 13.4050" required>
-          </label>
-          <button class="primary-action" type="submit">
-            <span>Chart berechnen</span>
-          </button>
-          <p class="form-help">Standard ist deutsche Zeit. F&uuml;r Geburtsurkunden au&szlig;erhalb Deutschlands kannst du die Zeitzone automatisch aus dem Geburtsort nehmen lassen. Der Ort wird mit Koordinaten und Zeitzone aufgel&ouml;st.</p>
-        </form>
+    <main>
+      <section class="quote-band" aria-label="myhumanos Leitgedanken">
+        <p>Du bist nicht hier, um jede Erwartung zu erfuellen. Dein Design erinnert dich daran, wo dein Koerper laengst weiss, was dein Kopf noch beweisen will.</p>
+        <p>Manchmal ist dein wahres Selbst nicht lauter. Es ist nur weniger verstrickt.</p>
+        <p>Ein Chart ist kein Urteil. Es ist ein Raum, in dem du dich wiedererkennst.</p>
       </section>
 
-      <section class="dashboard" aria-live="polite">
-        <div class="chart-stage">
-          <div class="stage-toolbar">
-            <span>Bodygraph Preview</span>
-            <strong id="provider-label">Live API bereit</strong>
+      <section class="app-shell" id="chart" aria-label="Human Design Chart Rechner">
+        <section class="hero-workspace" aria-labelledby="page-title">
+          <div class="section-kicker">
+            <span class="tiny-label">Chart Ritual</span>
+            <h2 id="page-title">Berechne dein energetisches Betriebssystem.</h2>
+            <p>Deutsche Zeit ist vorausgewaehlt. Wenn dein Geburtsort ausserhalb Deutschlands liegt, kann MyHumanOS die Zeitzone aus dem Ort ableiten.</p>
           </div>
-          <canvas id="chart-canvas" width="900" height="900" aria-label="Human-Design-Bodygraph-Vorschau"></canvas>
-        </div>
 
-        <div class="reading-panel" id="reading-panel">
-          <div class="empty-state">
-            <span class="tiny-label">Start</span>
-            <h2>Gib deine Geburtsdaten ein.</h2>
-            <p>Danach erscheint hier dein deutsches Human-Design-Dashboard mit Typ, Strategie, Autorit&auml;t, Profil, Zentren, Gates, Linien und Planetendaten.</p>
+          <form class="chart-form" id="chart-form">
+            <label>
+              <span>Name</span>
+              <input id="name" name="name" type="text" autocomplete="name" placeholder="Justin">
+            </label>
+            <label>
+              <span>Geburtsdatum</span>
+              <input id="birth-date" name="birthDate" type="date" required>
+            </label>
+            <label>
+              <span>Geburtszeit</span>
+              <input id="birth-time" name="birthTime" type="time" required>
+            </label>
+            <label>
+              <span>Zeitbasis</span>
+              <select id="timezone" name="timezone">
+                <option value="Europe/Berlin" selected>Deutsche Zeit (Europe/Berlin)</option>
+                <option value="auto">Automatisch nach Geburtsort</option>
+                <option value="Europe/Vienna">Oesterreich (Europe/Vienna)</option>
+                <option value="Europe/Zurich">Schweiz (Europe/Zurich)</option>
+                <option value="Europe/London">UK (Europe/London)</option>
+                <option value="America/New_York">US Ostkueste (New York)</option>
+                <option value="America/Los_Angeles">US Westkueste (Los Angeles)</option>
+              </select>
+            </label>
+            <label class="wide">
+              <span>Geburtsort</span>
+              <input id="birth-place" name="birthPlace" type="text" autocomplete="address-level2" placeholder="z. B. Berlin, DE oder 52.5200, 13.4050" required>
+            </label>
+            <button class="primary-action" type="submit">
+              <span>Chart berechnen</span>
+            </button>
+            <p class="form-help">Nach der Berechnung erscheint dein Chart oeffentlich in der Seitenliste, aber nur mit Vorname und Chart-Ergebnis. Geburtsdaten, Ort, Uhrzeit und Koordinaten bleiben aus dieser Liste heraus.</p>
+          </form>
+        </section>
+
+        <section class="dashboard" aria-live="polite">
+          <div class="chart-stage">
+            <div class="stage-toolbar">
+              <span>Bodygraph Preview</span>
+              <strong id="provider-label">Live API bereit</strong>
+            </div>
+            <canvas id="chart-canvas" width="900" height="900" aria-label="Human-Design-Bodygraph-Vorschau"></canvas>
           </div>
+
+          <div class="reading-panel" id="reading-panel">
+            <div class="empty-state">
+              <span class="tiny-label">Start</span>
+              <h2>Gib deine Geburtsdaten ein.</h2>
+              <p>Danach erscheint hier dein deutsches Human-Design-Reading mit Typ, Strategie, Autoritaet, Profil, Zentren, Gates, Linien und Planetendaten.</p>
+            </div>
+          </div>
+        </section>
+
+        <aside class="public-panel" aria-labelledby="public-title">
+          <div class="public-heading">
+            <span class="tiny-label">Community</span>
+            <h2 id="public-title">Oeffentliche Charts</h2>
+            <p>Zuletzt berechnete Designs. Sichtbar sind nur Vorname, Typ, Autoritaet, Profil, Zentren und Gates.</p>
+          </div>
+          <div class="public-list" id="public-chart-list">
+            <article class="public-card muted">
+              <span>Lade Charts...</span>
+            </article>
+          </div>
+          <p class="public-note" id="public-chart-status">Geburtsdaten, Uhrzeit, Ort, Koordinaten und API-Rohdaten werden nicht in dieser Liste gezeigt.</p>
+        </aside>
+      </section>
+
+      <section class="lexicon-section" id="typen">
+        <div class="section-heading wide-heading">
+          <span class="tiny-label">Kleines Lexikon</span>
+          <h2>Die fuenf Typen als innere Architektur.</h2>
+          <p>Jeder Typ beschreibt nicht deinen Wert, sondern die Art, wie Energie in dir am saubersten ins Leben tritt.</p>
         </div>
+        <div class="type-grid">
+          <article class="wisdom-card generator">
+            <span>Generator</span>
+            <h3>Das lebendige Ja</h3>
+            <p>Dein Koerper oeffnet Energie ueber Resonanz. Wenn etwas wirklich antwortet, entsteht Ausdauer. Wenn nur der Kopf ja sagt, wird selbst ein guter Plan schwer.</p>
+          </article>
+          <article class="wisdom-card mg">
+            <span>Manifestierender Generator</span>
+            <h3>Der schnelle Kurswechsel</h3>
+            <p>Du bist gebaut fuer Bewegung, Reaktion und Korrektur. Dein Weg muss nicht linear aussehen, um wahr zu sein.</p>
+          </article>
+          <article class="wisdom-card projector">
+            <span>Projektor</span>
+            <h3>Der Blick fuer Muster</h3>
+            <p>Du fuehrst nicht durch Dauerleistung, sondern durch Wahrnehmung. Die richtige Einladung erkennt dich, bevor du dich erklaeren musst.</p>
+          </article>
+          <article class="wisdom-card manifestor">
+            <span>Manifestor</span>
+            <h3>Der erste Impuls</h3>
+            <p>Du bringst Bewegung in Felder. Informieren ist kein Kleinmachen, sondern eine Tuer, durch die weniger Widerstand entsteht.</p>
+          </article>
+          <article class="wisdom-card reflector">
+            <span>Reflektor</span>
+            <h3>Der Mondspiegel</h3>
+            <p>Du liest Raeume, Menschen und Stimmungen fein. Deine Klarheit entsteht oft ueber Zeit, Umgebung und das Wiedersehen deiner eigenen Wellen.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="profile-section" id="profile">
+        <div class="section-heading wide-heading">
+          <span class="tiny-label">Profil-Schaubild</span>
+          <h2>Zwischen Rolle, Wunde und Gabe.</h2>
+          <p>Profile zeigen, wie du lernst, wirkst und von anderen erlebt wirst. Sie sind kleine Bewegungsmuster deiner Biografie.</p>
+        </div>
+        <div class="profile-map">
+          <article><b>1/3</b><span>Forschen, testen, durch Erfahrung stabil werden.</span></article>
+          <article><b>1/4</b><span>Wissen aufbauen und ueber vertraute Menschen wirken.</span></article>
+          <article><b>2/4</b><span>Rueckzug, natuerliches Talent und ein Netzwerk, das dich ruft.</span></article>
+          <article><b>2/5</b><span>Talent im Verborgenen, starke Projektionen von aussen.</span></article>
+          <article><b>3/5</b><span>Experimentieren und praktische Loesungen aus Fehlern bringen.</span></article>
+          <article><b>3/6</b><span>Erst ausprobieren, spaeter aus gereifter Erfahrung fuehren.</span></article>
+          <article><b>4/1</b><span>Feste Grundlage, klares Netzwerk, treue innere Wahrheit.</span></article>
+          <article><b>4/6</b><span>Einfluss durch Menschen und eine lange Reifungslinie.</span></article>
+          <article><b>5/1</b><span>Loesungskraft mit Substanz, sichtbar unter Erwartungen.</span></article>
+          <article><b>5/2</b><span>Retterprojektionen, Rueckzug und geschuetztes Talent.</span></article>
+          <article><b>6/2</b><span>Natuerliche Weisheit, die nicht erzwungen werden kann.</span></article>
+          <article><b>6/3</b><span>Aus gelebter Erfahrung wird leise Autoritaet.</span></article>
+        </div>
+      </section>
+
+      <section class="compass-section" id="kompass">
+        <div class="section-heading wide-heading">
+          <span class="tiny-label">Innerer Kompass</span>
+          <h2>Autoritaet, Selbst und Nicht-Selbst.</h2>
+        </div>
+        <div class="compass-grid">
+          <article>
+            <span>Autoritaet</span>
+            <p>Deine Autoritaet ist die Stelle, an der Entscheidung nicht mehr nur gedacht, sondern koerperlich erkannt wird.</p>
+          </article>
+          <article>
+            <span>Selbst</span>
+            <p>Das Selbst fuehlt sich nicht immer spektakulaer an. Oft ist es der Moment, in dem innerer Druck abfaellt.</p>
+          </article>
+          <article>
+            <span>Nicht-Selbst</span>
+            <p>Nicht-Selbst ist kein Fehler. Es ist ein Signal, dass du vielleicht gerade eine fremde Erwartung als Wahrheit traegst.</p>
+          </article>
+          <article>
+            <span>Tore</span>
+            <p>Tore sind feine Themen deiner Aktivierungen: Worte, Impulse, Talente, Reibungen und kleine Tueren zur Selbsterkenntnis.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="source-note" aria-label="Quellen und Inspiration">
+        <p>MyHumanOS ist ein unabhaengiges Human-Design-inspiriertes Selbstreflexionsprojekt. Die Texte sind eigenstaendig formuliert und nutzen allgemeine Human-Design-Begriffe als Orientierung, ohne geschuetzte Buchpassagen zu uebernehmen.</p>
       </section>
     </main>
 
