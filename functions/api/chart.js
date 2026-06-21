@@ -458,7 +458,7 @@ function normalizeEphemerisResponse(data, payload, requestBody, location, relate
 
 function createHumanDesignPreview(points, payload, designPoints = [], transitPoints = []) {
   const personalityActivations = createActivations(points, "Personality");
-  const designActivations = createActivations(designPoints, "Design");
+  const designActivations = createDesignActivations(points, designPoints);
   const activations = [...personalityActivations, ...designActivations];
   const transitActivations = createActivations(transitPoints, "Transit");
   const activeBodygraphActivations = activations.length ? activations : personalityActivations;
@@ -492,8 +492,8 @@ function createHumanDesignPreview(points, payload, designPoints = [], transitPoi
     transitActivations,
     calculationNotes: [
       designSun
-        ? "Profil = Personality-Sonnenlinie / Design-Sonnenlinie."
-        : "Profil unvollstaendig: Fuer die zweite Profilzahl fehlt der Design-Chart. Aktiviere HUMAN_DESIGN_DESIGN_CHART oder pruefe den API-Endpunkt.",
+        ? "Profil = Personality-Sonnenlinie / Design-Sonnenlinie. Die Design-Sonne wird aus dem 88-Grad-Sonnenbogen abgeleitet."
+        : "Profil unvollstaendig: Fuer die zweite Profilzahl fehlt die Design-Sonne.",
       "Typ, Zentren und Autoritaet werden aus vollstaendig definierten Kanaelen abgeleitet."
     ],
     summary: designSun
@@ -520,6 +520,35 @@ function createActivations(points, layer) {
         tone: gateTone(gateInfo.gate)
       };
     });
+}
+
+function createDesignActivations(personalityPoints, designPoints) {
+  const activations = createActivations(designPoints, "Design");
+  const personalitySun = personalityPoints.find((point) => point.name.toLowerCase() === "sun");
+  const exactDesignSunLongitude = Number.isFinite(personalitySun?.longitude)
+    ? (((personalitySun.longitude - 88) % 360) + 360) % 360
+    : null;
+
+  if (!Number.isFinite(exactDesignSunLongitude)) {
+    return activations;
+  }
+
+  const exactSunActivation = {
+    planet: "Sun",
+    layer: "Design",
+    sign: signFromLongitude(exactDesignSunLongitude),
+    degree: exactDesignSunLongitude % 30,
+    longitude: exactDesignSunLongitude,
+    house: null,
+    retrograde: false,
+    ...gateFromLongitude(exactDesignSunLongitude)
+  };
+  exactSunActivation.tone = gateTone(exactSunActivation.gate);
+
+  return [
+    exactSunActivation,
+    ...activations.filter((activation) => activation.planet.toLowerCase() !== "sun")
+  ];
 }
 
 function createTransitSummary(transitPoints, humanDesign) {
@@ -688,7 +717,7 @@ function normalizeTimezone(value) {
 function calculateDesignDate(payload, location) {
   const birthUtcIso = convertLocalTimeToUtcIso(payload.birthDate, payload.birthTime, location.timezone);
   const birthUtc = birthUtcIso ? new Date(birthUtcIso) : new Date(`${payload.birthDate}T${payload.birthTime}:00Z`);
-  const designUtc = new Date(birthUtc.getTime() - 88 * 24 * 60 * 60 * 1000);
+  const designUtc = new Date(birthUtc.getTime() - (88 / 0.98564736) * 24 * 60 * 60 * 1000);
   const localParts = utcDateToLocalParts(designUtc, location.timezone);
 
   return {
@@ -775,16 +804,17 @@ function defaultTimezoneForCountry(countryCode) {
 
 function gateFromLongitude(longitude) {
   const gateOrder = [
-    25, 17, 21, 51, 42, 3, 27, 24,
-    2, 23, 8, 20, 16, 35, 45, 12,
-    15, 52, 39, 53, 62, 56, 31, 33,
-    7, 4, 29, 59, 40, 64, 47, 6,
-    46, 18, 48, 57, 32, 50, 28, 44,
-    1, 43, 14, 34, 9, 5, 26, 11,
-    10, 58, 38, 54, 61, 60, 41, 19,
-    13, 49, 30, 55, 37, 63, 22, 36
+    41, 19, 13, 49, 30, 55, 37, 63,
+    22, 36, 25, 17, 21, 51, 42, 3,
+    27, 24, 2, 23, 8, 20, 16, 35,
+    45, 12, 15, 52, 39, 53, 62, 56,
+    31, 33, 7, 4, 29, 59, 40, 64,
+    47, 6, 46, 18, 48, 57, 32, 50,
+    28, 44, 1, 43, 14, 34, 9, 5,
+    26, 11, 10, 58, 38, 54, 61, 60
   ];
-  const normalized = (((longitude % 360) + 360) % 360);
+  const raveMandalaStart = 301.875;
+  const normalized = (((longitude - raveMandalaStart) % 360) + 360) % 360;
   const gateSize = 360 / 64;
   const index = Math.floor(normalized / gateSize) % 64;
   const line = Math.floor((normalized % gateSize) / (gateSize / 6)) + 1;
