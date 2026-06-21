@@ -2,20 +2,22 @@ const form = document.querySelector("#chart-form");
 const panel = document.querySelector("#reading-panel");
 const canvas = document.querySelector("#chart-canvas");
 const providerLabel = document.querySelector("#provider-label");
+const publicChartList = document.querySelector("#public-chart-list");
+const publicChartStatus = document.querySelector("#public-chart-status");
 const context = canvas.getContext("2d");
 
 const colors = {
-  ink: "#101616",
-  muted: "#66706f",
-  line: "#d9dfdd",
-  paper: "#f7f4ed",
-  surface: "#ffffff",
-  teal: "#0f766e",
-  coral: "#c6533b",
-  gold: "#b88a2d",
-  violet: "#6d5aa8",
-  blue: "#356899",
-  green: "#587f45"
+  ink: "#f7f1ff",
+  muted: "#b4a6c7",
+  line: "rgba(232, 213, 255, 0.22)",
+  paper: "#12091a",
+  surface: "#160d20",
+  teal: "#83e6ff",
+  coral: "#ff8fc7",
+  gold: "#dfb86d",
+  violet: "#8f5cff",
+  blue: "#9fb7ff",
+  green: "#b8f0c2"
 };
 
 const centerLayout = [
@@ -51,6 +53,7 @@ const defaultChart = {
 };
 
 drawChart(defaultChart);
+loadPublicCharts();
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -67,6 +70,7 @@ form.addEventListener("submit", async (event) => {
     renderReading(chart, payload);
     drawChart(chart);
     providerLabel.textContent = chart.isMock ? "Fallback Preview" : "Swiss Ephemeris live";
+    addPublicChartFromResult(chart, payload);
   } catch (error) {
     panel.innerHTML = `<p class="error">${escapeHtml(error.message)}</p>`;
   } finally {
@@ -91,6 +95,146 @@ async function fetchChart(payload) {
   if (response.ok) return response.json();
   if (response.status === 404 || response.status === 405) return createFallbackChart(payload);
   throw new Error("Die Chart-Auswertung konnte gerade nicht geladen werden.");
+}
+
+async function loadPublicCharts() {
+  try {
+    const response = await fetch("/api/charts", { headers: { Accept: "application/json" } });
+
+    if (!response.ok) {
+      throw new Error("Public chart list unavailable.");
+    }
+
+    const data = await response.json();
+    renderPublicCharts(data.charts || [], data.storageEnabled);
+  } catch {
+    renderPublicCharts(readLocalPublicCharts(), false);
+  }
+}
+
+function addPublicChartFromResult(chart, payload) {
+  const serverEntry = chart.publicChart?.entry;
+
+  if (serverEntry) {
+    const shouldRememberLocally = !chart.publicChart.saved;
+    if (shouldRememberLocally) {
+      rememberLocalPublicChart(serverEntry);
+    }
+
+    prependPublicChart(serverEntry, Boolean(chart.publicChart.storageEnabled));
+    return;
+  }
+
+  const fallbackEntry = createPublicChartPreviewEntry(chart, payload);
+  rememberLocalPublicChart(fallbackEntry);
+  prependPublicChart(fallbackEntry, false);
+}
+
+function renderPublicCharts(charts, storageEnabled) {
+  const visibleCharts = charts.slice(0, 40);
+
+  if (!visibleCharts.length) {
+    publicChartList.innerHTML = `
+      <article class="public-card muted">
+        <span>Noch keine Charts</span>
+        <p class="public-meta">Das naechste berechnete Chart erscheint hier wie ein kleiner Lichtpunkt im Sanctuary.</p>
+      </article>
+    `;
+  } else {
+    publicChartList.innerHTML = visibleCharts.map(publicChartCard).join("");
+  }
+
+  publicChartStatus.textContent = storageEnabled
+    ? "Live gespeichert: oeffentlich sichtbar sind nur Vorname und Chart-Ergebnis. Geburtsdatum, Uhrzeit, Ort, Koordinaten und API-Rohdaten bleiben verborgen."
+    : "Lokale Vorschau: Fuer echte oeffentliche Speicherung braucht Cloudflare den KV-Speicher PUBLIC_CHARTS.";
+}
+
+function prependPublicChart(entry, storageEnabled) {
+  const current = Array.from(publicChartList.querySelectorAll("[data-public-chart-id]")).map((node) => node.dataset.publicChartId);
+
+  if (current.includes(entry.id)) {
+    return;
+  }
+
+  const html = publicChartCard(entry);
+  const mutedCard = publicChartList.querySelector(".public-card.muted");
+
+  if (mutedCard) {
+    publicChartList.innerHTML = html;
+  } else {
+    publicChartList.insertAdjacentHTML("afterbegin", html);
+  }
+
+  publicChartStatus.textContent = storageEnabled
+    ? "Gespeichert. In der Community-Liste erscheint nur dein Vorname mit dem Chart-Spiegel."
+    : "Lokal vorgemerkt. Fuer echte oeffentliche Speicherung braucht Cloudflare die PUBLIC_CHARTS KV-Bindung.";
+}
+
+function publicChartCard(entry) {
+  const gates = Array.isArray(entry.gates) ? entry.gates.slice(0, 6) : [];
+  const centers = Array.isArray(entry.centers) ? entry.centers.slice(0, 4).join(", ") : "";
+
+  return `
+    <article class="public-card" data-public-chart-id="${escapeHtml(entry.id)}">
+      <div class="public-card-header">
+        <div>
+          <span>${escapeHtml(entry.provider || "Chart")}</span>
+          <h3>${escapeHtml(entry.firstName || "Anonym")}</h3>
+        </div>
+        <time datetime="${escapeHtml(entry.createdAt || "")}">${escapeHtml(formatPublicDate(entry.createdAt))}</time>
+      </div>
+      <strong>${escapeHtml(entry.type || "Human Design")} · Profil ${escapeHtml(entry.profile || "n/a")}</strong>
+      <p class="public-meta">${escapeHtml(entry.authority || "Autoritaet offen")} · ${escapeHtml(entry.strategy || "Strategie offen")}${centers ? ` · ${escapeHtml(centers)}` : ""}</p>
+      ${gates.length ? `<div class="public-gates">${gates.map((gate) => `<b>Tor ${escapeHtml(gate.gate)}${gate.line ? `.${escapeHtml(gate.line)}` : ""}</b>`).join("")}</div>` : ""}
+    </article>
+  `;
+}
+
+function createPublicChartPreviewEntry(chart, payload) {
+  const hd = chart.humanDesign || {};
+
+  return {
+    id: `local-${hash(`${payload.name}|${payload.birthDate}|${payload.birthTime}|${Date.now()}`).toString(16)}`,
+    createdAt: new Date().toISOString(),
+    firstName: firstNameOnly(payload.name),
+    type: chart.type,
+    strategy: chart.strategy,
+    authority: chart.authority,
+    profile: chart.profile,
+    signature: chart.signature,
+    notSelf: chart.notSelf,
+    centers: hd.definedCenters || chart.centers || [],
+    gates: (hd.gates || chart.gates || []).slice(0, 8).map((gate) => typeof gate === "number" ? { gate } : gate),
+    provider: chart.provider || (chart.isMock ? "Preview" : "Swiss Ephemeris"),
+    isMock: Boolean(chart.isMock)
+  };
+}
+
+function readLocalPublicCharts() {
+  try {
+    return JSON.parse(localStorage.getItem("myhumanos-public-charts") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function rememberLocalPublicChart(entry) {
+  const entries = [entry, ...readLocalPublicCharts().filter((item) => item.id !== entry.id)].slice(0, 30);
+  localStorage.setItem("myhumanos-public-charts", JSON.stringify(entries));
+}
+
+function firstNameOnly(value) {
+  const first = String(value || "Anonym").trim().split(/\s+/)[0].replace(/[^\p{L}\p{M}0-9._-]/gu, "");
+
+  return first.slice(0, 24) || "Anonym";
+}
+
+function formatPublicDate(value) {
+  try {
+    return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" }).format(new Date(value));
+  } catch {
+    return "heute";
+  }
 }
 
 function createFallbackChart(payload) {
@@ -159,15 +303,15 @@ function renderReading(chart, payload) {
     </div>
 
     <div class="core-grid">
-      ${coreCard("Strategie", chart.strategy, "Wie deine Energie korrekt startet.")}
-      ${coreCard("Autorität", chart.authority, "Wie Entscheidungen im Körper klar werden.")}
-      ${coreCard("Profil", chart.profile, "Deine Lern- und Begegnungsmechanik.")}
-      ${coreCard("Selbst", chart.signature, "So fühlt sich Alignment an.")}
-      ${coreCard("Nicht-Selbst", chart.notSelf, "Dein Warnsignal im Alltag.")}
+      ${coreCard("Strategie", chart.strategy, "Der Eingang, durch den deine Energie weicher ins Leben tritt.")}
+      ${coreCard("Autoritaet", chart.authority, "Der Ort, an dem Entscheidung im Koerper klarer wird.")}
+      ${coreCard("Profil", chart.profile, "Deine Lernspur zwischen Rolle, Gabe und Begegnung.")}
+      ${coreCard("Selbst", chart.signature, "So fuehlt es sich an, wenn du weniger gegen dich arbeitest.")}
+      ${coreCard("Nicht-Selbst", chart.notSelf, "Das Signal, dass du vielleicht fremde Erwartungen traegst.")}
       ${coreCard("Zeitzone", location.timezone || chart.time?.interpretedAs || "Europe/Berlin", "Geburtszeit wird lokal interpretiert.")}
-      ${coreCard("UTC", utcTime, "Umrechnung für die Ephemeris-Zeit.")}
+      ${coreCard("UTC", utcTime, "Umrechnung fuer die Ephemeris-Zeit.")}
       ${coreCard("Koordinaten", coordinates, location.city ? `${location.city}, ${location.countryCode}` : "Geburtsort")}
-      ${coreCard("Ort-Quelle", locationSource, "So wurde der Geburtsort aufgelöst.")}
+      ${coreCard("Ort-Quelle", locationSource, "So wurde der Geburtsort aufgeloest.")}
       ${coreCard("Status", chart.isMock ? "Fallback" : "Live", chart.isMock ? "Ohne API berechnet." : "Mit Swiss Ephemeris berechnet.")}
     </div>
 
@@ -261,7 +405,7 @@ function loadingTemplate() {
     <div class="empty-state">
       <span class="tiny-label">Swiss Ephemeris</span>
       <h2>Dein Chart wird berechnet.</h2>
-      <p>MyHumanOS ruft die geschützte Worker-API auf und übersetzt die Positionen in Human-Design-Gates.</p>
+      <p>MyHumanOS ruft die geschuetzte Worker-API auf und uebersetzt die Positionen in Human-Design-Gates.</p>
     </div>
   `;
 }
@@ -272,7 +416,11 @@ function drawChart(chart) {
   const gates = hd.gates || chart.gates?.map((gate) => ({ gate, line: 1 })) || [];
 
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = colors.surface;
+  const background = context.createRadialGradient(450, 390, 40, 450, 450, 500);
+  background.addColorStop(0, "#2b1840");
+  background.addColorStop(0.55, "#160d20");
+  background.addColorStop(1, "#0c0711");
+  context.fillStyle = background;
   context.fillRect(0, 0, canvas.width, canvas.height);
   drawGateWheel(gates);
   drawChannels(gates);
@@ -284,7 +432,7 @@ function drawGateWheel(gates) {
   const cx = 450;
   const cy = 450;
   const radius = 396;
-  context.strokeStyle = colors.line;
+  context.strokeStyle = "rgba(232, 213, 255, 0.28)";
   context.lineWidth = 2;
 
   for (let ring = 0; ring < 4; ring += 1) {
@@ -312,7 +460,7 @@ function drawGateWheel(gates) {
     context.arc(x, y, 20, 0, Math.PI * 2);
     context.fill();
 
-    context.fillStyle = "#fff";
+    context.fillStyle = "#160d20";
     context.font = "800 14px Inter, sans-serif";
     context.textAlign = "center";
     context.textBaseline = "middle";
@@ -338,7 +486,7 @@ function drawChannels(gates) {
     const active = activeGates.has(a) && activeGates.has(b);
 
     context.beginPath();
-    context.strokeStyle = active ? colors.ink : "#e7ebe9";
+    context.strokeStyle = active ? colors.gold : "rgba(232, 213, 255, 0.16)";
     context.lineWidth = active ? 7 : 4;
     context.moveTo(start.x, start.y);
     context.lineTo(end.x, end.y);
@@ -349,17 +497,17 @@ function drawChannels(gates) {
 function drawCenters(definedCenters) {
   centerLayout.forEach((center, index) => {
     const active = definedCenters.includes(center.name);
-    const fill = active ? [colors.teal, colors.coral, colors.gold, colors.violet, colors.blue][index % 5] : "#f1f4f2";
+    const fill = active ? [colors.teal, colors.coral, colors.gold, colors.violet, colors.blue][index % 5] : "rgba(232, 213, 255, 0.09)";
 
     context.beginPath();
     drawCenterShape(center);
     context.fillStyle = fill;
-    context.strokeStyle = active ? colors.ink : colors.line;
+    context.strokeStyle = active ? "#f7f1ff" : "rgba(232, 213, 255, 0.22)";
     context.lineWidth = active ? 3 : 2;
     context.fill();
     context.stroke();
 
-    context.fillStyle = active ? "#fff" : colors.muted;
+    context.fillStyle = active ? "#160d20" : colors.muted;
     context.font = "800 15px Inter, sans-serif";
     context.textAlign = "center";
     context.textBaseline = "middle";
@@ -409,15 +557,15 @@ function roundedRect(x, y, width, height, radius) {
 
 function dailyFocus(gates) {
   const first = gates[0];
-  if (!first) return "Achte auf deinen Körper, bevor du entscheidest.";
+  if (!first) return "Achte auf deinen Koerper, bevor du entscheidest.";
   return `Tor ${first.gate}.${first.line || 1}: ${first.tone || "Aktivierung"} beobachten.`;
 }
 
 function practiceForType(type) {
   return {
-    Generator: "Warte auf ein klares Ja im Körper.",
+    Generator: "Warte auf ein klares Ja im Koerper.",
     "Manifestierender Generator": "Reagiere, pruefe Tempo, informiere kurz.",
-    Projektor: "Sprich, wenn Anerkennung im Raum ist.",
+    Projektor: "Warte auf Anerkennung, bevor du deine Tiefe verschenkst.",
     Manifestor: "Informiere, bevor du initiierst.",
     Reflektor: "Gib deiner Wahrheit Zeit."
   }[type] || "Bleib bei deiner inneren Antwort.";
@@ -451,3 +599,4 @@ function escapeHtml(value) {
     "'": "&#039;"
   })[char]);
 }
+
