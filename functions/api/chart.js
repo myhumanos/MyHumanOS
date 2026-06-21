@@ -251,7 +251,8 @@ function extractAstrologyPoints(data) {
     data?.data?.planets,
     data?.data?.positions,
     data?.natal?.points,
-    data?.natal?.planets
+    data?.natal?.planets,
+    data?.chart_data?.planetary_positions
   ];
   const source = candidates.find((candidate) => Array.isArray(candidate) || isPlainObject(candidate));
 
@@ -282,7 +283,7 @@ function normalizePoint(name, point) {
 }
 
 function extractHouses(data) {
-  const source = data?.houses || data?.house_cusps || data?.chart?.houses || data?.data?.houses;
+  const source = data?.houses || data?.house_cusps || data?.chart?.houses || data?.data?.houses || data?.chart_data?.house_cusps;
 
   if (!Array.isArray(source)) {
     return [];
