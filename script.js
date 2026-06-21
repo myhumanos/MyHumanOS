@@ -1,40 +1,445 @@
-document.getElementById("year").textContent = new Date().getFullYear();
+const form = document.querySelector("#chart-form");
+const panel = document.querySelector("#reading-panel");
+const canvas = document.querySelector("#chart-canvas");
+const providerLabel = document.querySelector("#provider-label");
+const context = canvas.getContext("2d");
 
-const types = [
-  { name: "Generator", strategy: "Respond, then commit", authority: "Sacral clarity", vibe: "Your energy grows when you stop chasing and start responding to what is actually alive in front of you." },
-  { name: "Manifesting Generator", strategy: "Respond, then inform", authority: "Sacral clarity", vibe: "You are built for speed, experiments and nonlinear paths. Let life give you something real to respond to first." },
-  { name: "Projector", strategy: "Wait for recognition", authority: "Emotional clarity", vibe: "Your gift is seeing systems. Do not force access. Let the right people invite your perspective." },
-  { name: "Manifestor", strategy: "Inform before initiating", authority: "Splenic impulse", vibe: "You move energy by initiating. Peace comes when you communicate before you disrupt the room." },
-  { name: "Reflector", strategy: "Wait a lunar cycle", authority: "Lunar/environmental clarity", vibe: "You are not here to be consistent. You are here to sample life and reveal the truth of the environment." }
+const colors = {
+  ink: "#101616",
+  muted: "#66706f",
+  line: "#d9dfdd",
+  paper: "#f7f4ed",
+  surface: "#ffffff",
+  teal: "#0f766e",
+  coral: "#c6533b",
+  gold: "#b88a2d",
+  violet: "#6d5aa8",
+  blue: "#356899",
+  green: "#587f45"
+};
+
+const centerLayout = [
+  { name: "Kopf", x: 450, y: 128, shape: "triangle" },
+  { name: "Ajna", x: 450, y: 238, shape: "triangleDown" },
+  { name: "Kehle", x: 450, y: 350, shape: "square" },
+  { name: "G-Zentrum", x: 450, y: 472, shape: "diamond" },
+  { name: "Ego", x: 572, y: 502, shape: "small" },
+  { name: "Milz", x: 314, y: 578, shape: "triangleRight" },
+  { name: "Solarplexus", x: 606, y: 606, shape: "triangleLeft" },
+  { name: "Sakral", x: 450, y: 636, shape: "square" },
+  { name: "Wurzel", x: 450, y: 770, shape: "square" }
 ];
-const profiles = ["1/3 Investigator - Martyr", "1/4 Investigator - Opportunist", "2/4 Hermit - Opportunist", "2/5 Hermit - Heretic", "3/5 Martyr - Heretic", "3/6 Martyr - Role Model", "4/6 Opportunist - Role Model", "4/1 Opportunist - Investigator", "5/1 Heretic - Investigator", "5/2 Heretic - Hermit", "6/2 Role Model - Hermit", "6/3 Role Model - Martyr"];
-const centers = ["Head", "Ajna", "Throat", "G", "Heart", "Sacral", "Spleen", "Solar Plexus", "Root"];
-const gateThemes = ["Self-expression", "Stillness", "Beginnings", "Direction", "Patience", "Friction", "Leadership", "Contribution", "Focus", "Behavior", "Peace", "Caution", "Listening", "Grace", "Extremes", "Skills", "Opinions", "Correction", "Wanting", "Contemplation", "Biting Through", "Grace", "Splitting Apart", "Return", "Innocence", "Taming Power", "Nourishment", "Preponderance", "The Abysmal", "The Clinging", "Influence", "Duration", "Retreat", "Power", "Progress", "Darkening", "Family", "Opposition", "Obstruction", "Deliverance", "Decrease", "Increase", "Breakthrough", "Coming to Meet", "Gathering", "Pushing Up", "Oppression", "The Well", "Revolution", "The Cauldron", "Shock", "Keeping Still", "Development", "Marrying Maiden", "Abundance", "The Wanderer", "Gentle Wind", "Joy", "Dispersion", "Limitation", "Inner Truth", "Small Exceeding", "After Completion", "Before Completion"];
 
-function hash(str) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i += 1) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
+const defaultChart = {
+  type: "Generator",
+  strategy: "Reagieren",
+  authority: "Sakral",
+  profile: "2/4",
+  signature: "Zufriedenheit",
+  notSelf: "Frustration",
+  centers: ["Sakral", "G-Zentrum", "Milz"],
+  gates: [5, 14, 29, 34, 46, 57],
+  humanDesign: {
+    definedCenters: ["Sakral", "G-Zentrum", "Milz"],
+    openCenters: ["Kopf", "Ajna", "Kehle", "Ego", "Solarplexus", "Wurzel"],
+    gates: [
+      { gate: 5, line: 2, planet: "Sun", tone: "Rhythmus" },
+      { gate: 14, line: 4, planet: "Moon", tone: "Ressourcen" },
+      { gate: 29, line: 1, planet: "Venus", tone: "Commitment" }
+    ]
   }
-  return Math.abs(h);
+};
+
+drawChart(defaultChart);
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const submitButton = form.querySelector("button");
+  const payload = Object.fromEntries(new FormData(form).entries());
+
+  submitButton.disabled = true;
+  submitButton.querySelector("span").textContent = "Berechne live...";
+  panel.innerHTML = loadingTemplate();
+
+  try {
+    const chart = await fetchChart(payload);
+    renderReading(chart, payload);
+    drawChart(chart);
+    providerLabel.textContent = chart.isMock ? "Fallback Preview" : "Swiss Ephemeris live";
+  } catch (error) {
+    panel.innerHTML = `<p class="error">${escapeHtml(error.message)}</p>`;
+  } finally {
+    submitButton.disabled = false;
+    submitButton.querySelector("span").textContent = "Chart berechnen";
+  }
+});
+
+async function fetchChart(payload) {
+  let response;
+
+  try {
+    response = await fetch("/api/chart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    return createFallbackChart(payload);
+  }
+
+  if (response.ok) return response.json();
+  if (response.status === 404 || response.status === 405) return createFallbackChart(payload);
+  throw new Error("Die Chart-Auswertung konnte gerade nicht geladen werden.");
 }
 
-function pick(arr, seed, off = 0) {
-  return arr[(seed + off) % arr.length];
+function createFallbackChart(payload) {
+  const seed = hash(`${payload.birthDate}|${payload.birthTime}|${payload.birthPlace}`);
+  const timezone = payload.timezone && payload.timezone !== "auto" ? payload.timezone : "Europe/Berlin";
+  const types = ["Generator", "Manifestierender Generator", "Projektor", "Manifestor", "Reflektor"];
+  const authorities = ["Sakral", "Emotional", "Milz", "Ego", "Selbst-projiziert"];
+  const centers = ["Kopf", "Ajna", "Kehle", "G-Zentrum", "Ego", "Milz", "Sakral", "Solarplexus", "Wurzel"]
+    .filter((_, index) => ((seed >> index) & 1) === 1)
+    .slice(0, 5);
+  const gates = Array.from({ length: 10 }, (_, index) => ((seed + index * 11) % 64) + 1);
+
+  return {
+    type: pick(types, seed),
+    strategy: "Reagieren",
+    authority: pick(authorities, seed >> 2),
+    profile: pick(["1/3", "2/4", "3/5", "4/6", "5/1", "6/2"], seed >> 4),
+    signature: "Klarheit",
+    notSelf: "Widerstand",
+    centers,
+    gates,
+    humanDesign: {
+      definedCenters: centers,
+      openCenters: centerLayout.map((center) => center.name).filter((center) => !centers.includes(center)),
+      gates: gates.map((gate, index) => ({ gate, line: (index % 6) + 1, planet: "Preview", tone: "Aktivierung" }))
+    },
+    location: {
+      city: payload.birthPlace,
+      countryCode: "DE",
+      latitude: null,
+      longitude: null,
+      timezone,
+      source: "browser-preview"
+    },
+    time: {
+      inputDate: payload.birthDate,
+      inputTime: payload.birthTime,
+      interpretedAs: timezone,
+      utcTime: "",
+      timezoneSource: payload.timezone === "auto" ? "fallback" : "manual"
+    },
+    summary: "Fallback-Preview. Sobald der Worker live erreichbar ist, wird Swiss Ephemeris genutzt.",
+    isMock: true
+  };
 }
 
-function uniqueGates(seed) {
-  const out = [];
-  let x = seed;
-  while (out.length < 8) {
-    x = (x * 9301 + 49297) % 233280;
-    const gate = (x % 64) + 1;
-    if (!out.includes(gate)) {
-      out.push(gate);
-    }
+function renderReading(chart, payload) {
+  const hd = chart.humanDesign || {};
+  const gates = hd.gates || chart.gates?.map((gate) => ({ gate, line: 1, planet: "Aktivierung", tone: "Tor" })) || [];
+  const definedCenters = hd.definedCenters || chart.centers || [];
+  const openCenters = hd.openCenters || centerLayout.map((center) => center.name).filter((center) => !definedCenters.includes(center));
+  const points = Array.isArray(chart.points) ? chart.points.slice(0, 12) : [];
+  const location = chart.location || {};
+  const coordinates = Number.isFinite(location.latitude) && Number.isFinite(location.longitude)
+    ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`
+    : "wird vom API-Provider bestimmt";
+  const time = chart.time || {};
+  const utcTime = time.utcTime ? formatUtcTime(time.utcTime) : "wird vom API-Provider bestimmt";
+  const locationSource = locationSourceLabel(location.source, time.timezoneSource);
+
+  panel.innerHTML = `
+    <div class="reading-header">
+      <span class="tiny-label">${chart.isMock ? "Preview" : escapeHtml(chart.provider || "Swiss Ephemeris")}</span>
+      <h2>${escapeHtml(chart.type || "Human Design Preview")}</h2>
+      <p>${escapeHtml(payload.name || "Dein Chart")} · ${escapeHtml(payload.birthPlace)} · ${escapeHtml(payload.birthDate)} · ${escapeHtml(payload.birthTime)}</p>
+    </div>
+
+    <div class="core-grid">
+      ${coreCard("Strategie", chart.strategy, "Wie deine Energie korrekt startet.")}
+      ${coreCard("Autorität", chart.authority, "Wie Entscheidungen im Körper klar werden.")}
+      ${coreCard("Profil", chart.profile, "Deine Lern- und Begegnungsmechanik.")}
+      ${coreCard("Selbst", chart.signature, "So fühlt sich Alignment an.")}
+      ${coreCard("Nicht-Selbst", chart.notSelf, "Dein Warnsignal im Alltag.")}
+      ${coreCard("Zeitzone", location.timezone || chart.time?.interpretedAs || "Europe/Berlin", "Geburtszeit wird lokal interpretiert.")}
+      ${coreCard("UTC", utcTime, "Umrechnung für die Ephemeris-Zeit.")}
+      ${coreCard("Koordinaten", coordinates, location.city ? `${location.city}, ${location.countryCode}` : "Geburtsort")}
+      ${coreCard("Ort-Quelle", locationSource, "So wurde der Geburtsort aufgelöst.")}
+      ${coreCard("Status", chart.isMock ? "Fallback" : "Live", chart.isMock ? "Ohne API berechnet." : "Mit Swiss Ephemeris berechnet.")}
+    </div>
+
+    <div class="insight-strip">
+      <div>
+        <span>Heute wichtig</span>
+        <strong>${dailyFocus(gates)}</strong>
+      </div>
+      <div>
+        <span>Praxis</span>
+        <strong>${practiceForType(chart.type)}</strong>
+      </div>
+    </div>
+
+    <section class="reading-section">
+      <div class="section-heading">
+        <span class="tiny-label">Zentren</span>
+        <h3>Definiert und offen</h3>
+      </div>
+      <div class="center-columns">
+        <div><strong>Definiert</strong><ul class="tag-list">${definedCenters.map(tag).join("") || "<li>Keine feste Definition</li>"}</ul></div>
+        <div><strong>Offen</strong><ul class="tag-list open">${openCenters.map(tag).join("") || "<li>Alles definiert</li>"}</ul></div>
+      </div>
+    </section>
+
+    <section class="reading-section">
+      <div class="section-heading">
+        <span class="tiny-label">Aktivierungen</span>
+        <h3>Gates und Linien</h3>
+      </div>
+      <div class="gate-grid">${gates.slice(0, 14).map(gateCard).join("")}</div>
+    </section>
+
+    ${points.length ? `
+      <section class="reading-section">
+        <div class="section-heading">
+          <span class="tiny-label">Ephemeris</span>
+          <h3>Planetenpositionen</h3>
+        </div>
+        <ul class="point-list">${points.map(pointRow).join("")}</ul>
+      </section>
+    ` : ""}
+
+    <p class="summary">${escapeHtml(chart.summary || "")}</p>
+  `;
+}
+
+function coreCard(label, value, detail) {
+  return `<article class="core-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || "n/a")}</strong><p>${escapeHtml(detail)}</p></article>`;
+}
+
+function formatUtcTime(value) {
+  try {
+    return new Intl.DateTimeFormat("de-DE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "UTC"
+    }).format(new Date(value));
+  } catch {
+    return value;
   }
-  return out;
+}
+
+function locationSourceLabel(source, timezoneSource) {
+  if (source === "geocoding") return timezoneSource === "manual" ? "Geocoding + manuelle Zeitbasis" : "Geocoding";
+  if (source === "coordinates") return timezoneSource === "manual" ? "Koordinaten + manuelle Zeitbasis" : "Koordinaten";
+  if (source === "browser-preview") return "Browser Preview";
+  return "Fallback Deutschland";
+}
+
+function gateCard(item) {
+  return `
+    <article class="gate-card">
+      <span>${escapeHtml(item.planet || "Aktivierung")}</span>
+      <strong>Tor ${escapeHtml(item.gate)}.${escapeHtml(item.line || 1)}</strong>
+      <p>${escapeHtml(item.tone || "Aktivierung")}</p>
+    </article>
+  `;
+}
+
+function pointRow(point) {
+  return `<li><strong>${escapeHtml(point.name)}</strong><span>${escapeHtml(formatPoint(point))}</span></li>`;
+}
+
+function tag(value) {
+  return `<li>${escapeHtml(value)}</li>`;
+}
+
+function loadingTemplate() {
+  return `
+    <div class="empty-state">
+      <span class="tiny-label">Swiss Ephemeris</span>
+      <h2>Dein Chart wird berechnet.</h2>
+      <p>MyHumanOS ruft die geschützte Worker-API auf und übersetzt die Positionen in Human-Design-Gates.</p>
+    </div>
+  `;
+}
+
+function drawChart(chart) {
+  const hd = chart.humanDesign || {};
+  const definedCenters = hd.definedCenters || chart.centers || [];
+  const gates = hd.gates || chart.gates?.map((gate) => ({ gate, line: 1 })) || [];
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = colors.surface;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  drawGateWheel(gates);
+  drawChannels(gates);
+  drawCenters(definedCenters);
+  drawChartLabel(chart);
+}
+
+function drawGateWheel(gates) {
+  const cx = 450;
+  const cy = 450;
+  const radius = 396;
+  context.strokeStyle = colors.line;
+  context.lineWidth = 2;
+
+  for (let ring = 0; ring < 4; ring += 1) {
+    context.beginPath();
+    context.arc(cx, cy, radius - ring * 32, 0, Math.PI * 2);
+    context.stroke();
+  }
+
+  for (let index = 0; index < 64; index += 1) {
+    const angle = (Math.PI * 2 * index) / 64 - Math.PI / 2;
+    context.beginPath();
+    context.moveTo(cx + Math.cos(angle) * (radius - 25), cy + Math.sin(angle) * (radius - 25));
+    context.lineTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
+    context.stroke();
+  }
+
+  gates.slice(0, 18).forEach((item, index) => {
+    const angle = (Math.PI * 2 * ((item.gate || 1) % 64)) / 64 - Math.PI / 2;
+    const color = [colors.teal, colors.coral, colors.gold, colors.violet, colors.blue, colors.green][index % 6];
+    const x = cx + Math.cos(angle) * (radius - 54);
+    const y = cy + Math.sin(angle) * (radius - 54);
+
+    context.beginPath();
+    context.fillStyle = color;
+    context.arc(x, y, 20, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#fff";
+    context.font = "800 14px Inter, sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(String(item.gate), x, y);
+  });
+}
+
+function drawChannels(gates) {
+  const activeGates = new Set(gates.map((item) => item.gate));
+  const channelPairs = [
+    [64, 47, "Kopf", "Ajna"], [61, 24, "Kopf", "Ajna"], [63, 4, "Kopf", "Ajna"],
+    [17, 62, "Ajna", "Kehle"], [43, 23, "Ajna", "Kehle"], [11, 56, "Ajna", "Kehle"],
+    [1, 8, "G-Zentrum", "Kehle"], [7, 31, "G-Zentrum", "Kehle"], [13, 33, "G-Zentrum", "Kehle"],
+    [10, 34, "G-Zentrum", "Sakral"], [14, 2, "Sakral", "G-Zentrum"], [29, 46, "Sakral", "G-Zentrum"],
+    [59, 6, "Sakral", "Solarplexus"], [19, 49, "Wurzel", "Solarplexus"], [38, 28, "Wurzel", "Milz"],
+    [54, 32, "Wurzel", "Milz"], [21, 45, "Ego", "Kehle"], [26, 44, "Ego", "Milz"]
+  ];
+
+  channelPairs.forEach(([a, b, from, to]) => {
+    const start = centerLayout.find((center) => center.name === from);
+    const end = centerLayout.find((center) => center.name === to);
+    if (!start || !end) return;
+    const active = activeGates.has(a) && activeGates.has(b);
+
+    context.beginPath();
+    context.strokeStyle = active ? colors.ink : "#e7ebe9";
+    context.lineWidth = active ? 7 : 4;
+    context.moveTo(start.x, start.y);
+    context.lineTo(end.x, end.y);
+    context.stroke();
+  });
+}
+
+function drawCenters(definedCenters) {
+  centerLayout.forEach((center, index) => {
+    const active = definedCenters.includes(center.name);
+    const fill = active ? [colors.teal, colors.coral, colors.gold, colors.violet, colors.blue][index % 5] : "#f1f4f2";
+
+    context.beginPath();
+    drawCenterShape(center);
+    context.fillStyle = fill;
+    context.strokeStyle = active ? colors.ink : colors.line;
+    context.lineWidth = active ? 3 : 2;
+    context.fill();
+    context.stroke();
+
+    context.fillStyle = active ? "#fff" : colors.muted;
+    context.font = "800 15px Inter, sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(center.name, center.x, center.y);
+  });
+}
+
+function drawCenterShape(center) {
+  const { x, y } = center;
+  if (center.shape === "triangle") {
+    context.moveTo(x, y - 44); context.lineTo(x - 48, y + 36); context.lineTo(x + 48, y + 36); context.closePath();
+  } else if (center.shape === "triangleDown") {
+    context.moveTo(x - 50, y - 36); context.lineTo(x + 50, y - 36); context.lineTo(x, y + 44); context.closePath();
+  } else if (center.shape === "diamond") {
+    context.moveTo(x, y - 52); context.lineTo(x + 56, y); context.lineTo(x, y + 52); context.lineTo(x - 56, y); context.closePath();
+  } else if (center.shape === "triangleLeft") {
+    context.moveTo(x - 54, y); context.lineTo(x + 42, y - 46); context.lineTo(x + 42, y + 46); context.closePath();
+  } else if (center.shape === "triangleRight") {
+    context.moveTo(x + 54, y); context.lineTo(x - 42, y - 46); context.lineTo(x - 42, y + 46); context.closePath();
+  } else {
+    roundedRect(x - 54, y - 34, 108, 68, center.shape === "small" ? 14 : 8);
+  }
+}
+
+function drawChartLabel(chart) {
+  context.fillStyle = colors.ink;
+  context.font = "900 28px Inter, sans-serif";
+  context.textAlign = "center";
+  context.fillText(chart.type || "Human Design", 450, 52);
+  context.fillStyle = colors.muted;
+  context.font = "800 15px Inter, sans-serif";
+  context.fillText(`${chart.authority || "Autoritaet"} · Profil ${chart.profile || "n/a"}`, 450, 82);
+}
+
+function roundedRect(x, y, width, height, radius) {
+  context.moveTo(x + radius, y);
+  context.lineTo(x + width - radius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + radius);
+  context.lineTo(x + width, y + height - radius);
+  context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  context.lineTo(x + radius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - radius);
+  context.lineTo(x, y + radius);
+  context.quadraticCurveTo(x, y, x + radius, y);
+  context.closePath();
+}
+
+function dailyFocus(gates) {
+  const first = gates[0];
+  if (!first) return "Achte auf deinen Körper, bevor du entscheidest.";
+  return `Tor ${first.gate}.${first.line || 1}: ${first.tone || "Aktivierung"} beobachten.`;
+}
+
+function practiceForType(type) {
+  return {
+    Generator: "Warte auf ein klares Ja im Körper.",
+    "Manifestierender Generator": "Reagiere, pruefe Tempo, informiere kurz.",
+    Projektor: "Sprich, wenn Anerkennung im Raum ist.",
+    Manifestor: "Informiere, bevor du initiierst.",
+    Reflektor: "Gib deiner Wahrheit Zeit."
+  }[type] || "Bleib bei deiner inneren Antwort.";
+}
+
+function formatPoint(point) {
+  const degree = Number.isFinite(point.degree) ? `${point.degree.toFixed(1)} Grad ` : "";
+  const sign = point.sign || "";
+  const house = point.house ? ` · Haus ${point.house}` : "";
+  const retrograde = point.retrograde ? " · ruecklaeufig" : "";
+
+  return `${degree}${sign}${house}${retrograde}`.trim();
+}
+
+function pick(values, seed) {
+  return values[Math.abs(seed) % values.length];
+}
+
+function hash(value) {
+  return Array.from(value).reduce((accumulator, char) => {
+    return ((accumulator << 5) - accumulator + char.charCodeAt(0)) >>> 0;
+  }, 2166136261);
 }
 
 function escapeHtml(value) {
@@ -46,113 +451,3 @@ function escapeHtml(value) {
     "'": "&#039;"
   })[char]);
 }
-
-function localPreview(data) {
-  const seed = hash(`${data.name}|${data.date}|${data.time}|${data.place}`);
-  const type = pick(types, seed);
-  const profile = pick(profiles, seed, 3);
-  const gates = uniqueGates(seed);
-  const defined = centers.filter((_, index) => ((seed >> index) & 1)).slice(0, 5);
-  const openness = centers.filter((center) => !defined.includes(center));
-  return { ...data, type, profile, gates, defined, openness, vibe: type.vibe, isMock: true };
-}
-
-function renderLocalPreview(data) {
-  const preview = localPreview(data);
-  return `
-    <span class="result-kicker">Launch chart preview</span>
-    <h3>${escapeHtml(preview.name || "Your")} - ${escapeHtml(preview.type.name)}</h3>
-    <div class="result-grid">
-      <div><span>Profile</span><strong>${escapeHtml(preview.profile)}</strong></div>
-      <div><span>Strategy</span><strong>${escapeHtml(preview.type.strategy)}</strong></div>
-      <div><span>Authority</span><strong>${escapeHtml(preview.type.authority)}</strong></div>
-      <div><span>Place</span><strong>${escapeHtml(preview.place)}</strong></div>
-    </div>
-    <p class="guidance">${escapeHtml(preview.vibe)}</p>
-    <div class="mini-section"><span>Active gate preview</span><div class="gate-list">${preview.gates.map((gate) => `<b>Gate ${gate}<small>${escapeHtml(gateThemes[gate - 1])}</small></b>`).join("")}</div></div>
-    <div class="mini-section"><span>Defined centers preview</span><p>${preview.defined.length ? escapeHtml(preview.defined.join(" - ")) : "No fixed center preview"}</p></div>
-    <div class="mini-section"><span>Open centers preview</span><p>${escapeHtml(preview.openness.slice(0, 5).join(" - "))}</p></div>
-    <p class="disclaimer">Fallback preview. The server API is not available yet or the Astrology API key is missing.</p>
-  `;
-}
-
-function formatPoint(point) {
-  if (!point) return "n/a";
-  const degree = Number.isFinite(point.degree) ? `${point.degree.toFixed(1)} deg ` : "";
-  const sign = point.sign || "";
-  const house = point.house ? ` - House ${point.house}` : "";
-  return `${degree}${sign}${house}`.trim() || "calculated";
-}
-
-function renderApiChart(chart, data) {
-  const points = Array.isArray(chart.points) ? chart.points.slice(0, 12) : [];
-  const gates = Array.isArray(chart.gates) ? chart.gates.slice(0, 8) : [];
-  const highlights = Array.isArray(chart.centers) ? chart.centers.slice(0, 6) : [];
-  const metrics = chart.metrics || [
-    { label: "Sun", value: chart.strategy },
-    { label: "Moon", value: chart.authority },
-    { label: "Ascendant", value: chart.profile }
-  ];
-
-  return `
-    <span class="result-kicker">${escapeHtml(chart.provider || "Swiss Ephemeris")}</span>
-    <h3>${escapeHtml(data.name || "Your")} - ${escapeHtml(chart.type || "Natal Chart")}</h3>
-    <div class="result-grid">
-      ${metrics.map((metric) => `<div><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.value || "n/a")}</strong></div>`).join("")}
-      <div><span>Place</span><strong>${escapeHtml(data.place)}</strong></div>
-    </div>
-    <p class="guidance">${escapeHtml(chart.summary || "Swiss Ephemeris chart calculated successfully.")}</p>
-    ${points.length ? `<div class="mini-section"><span>Planet positions</span><div class="gate-list">${points.map((point) => `<b>${escapeHtml(point.name)}<small>${escapeHtml(formatPoint(point))}</small></b>`).join("")}</div></div>` : ""}
-    ${highlights.length ? `<div class="mini-section"><span>Chart highlights</span><p>${escapeHtml(highlights.join(" - "))}</p></div>` : ""}
-    ${gates.length ? `<div class="mini-section"><span>Chart markers</span><p>${gates.map((gate) => `Gate ${gate}`).join(" - ")}</p></div>` : ""}
-    <p class="disclaimer">Live API result. isMock: ${chart.isMock ? "true" : "false"}</p>
-  `;
-}
-
-async function fetchChart(data) {
-  const response = await fetch("/api/chart", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: data.name,
-      birthDate: data.date,
-      birthTime: data.time,
-      birthPlace: data.place
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Chart API failed with status ${response.status}`);
-  }
-
-  return response.json();
-}
-
-const form = document.getElementById("chartForm");
-const result = document.getElementById("chartResult");
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const data = {
-    name: document.getElementById("name").value.trim(),
-    date: document.getElementById("date").value,
-    time: document.getElementById("time").value,
-    place: document.getElementById("place").value.trim()
-  };
-  const submit = form.querySelector('button[type="submit"]');
-  const originalText = submit.textContent;
-
-  result.classList.remove("empty");
-  result.innerHTML = '<span class="result-kicker">Calculating</span><h3>Calling Swiss Ephemeris...</h3><p>Please wait a moment.</p>';
-  submit.disabled = true;
-  submit.textContent = "Calculating...";
-
-  try {
-    const chart = await fetchChart(data);
-    result.innerHTML = chart.isMock ? renderLocalPreview(data) : renderApiChart(chart, data);
-  } catch {
-    result.innerHTML = renderLocalPreview(data);
-  } finally {
-    submit.disabled = false;
-    submit.textContent = originalText;
-  }
-});
