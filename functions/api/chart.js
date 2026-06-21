@@ -43,8 +43,8 @@ export function onRequestOptions() {
   });
 }
 
-const PUBLIC_CHART_INDEX_KEY = "public-charts:index";
-const PUBLIC_CHART_PREFIX = "public-chart:";
+const PUBLIC_CHART_INDEX_KEY = "public-charts:v2:index";
+const PUBLIC_CHART_PREFIX = "public-chart:v2:";
 const PUBLIC_CHART_LIMIT = 60;
 
 async function savePublicChart(env, chart, payload) {
