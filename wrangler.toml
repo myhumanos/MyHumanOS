@@ -6,3 +6,7 @@ compatibility_date = "2026-06-21"
 directory = "."
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
+
+[[kv_namespaces]]
+binding = "PUBLIC_CHARTS"
+id = "16b954724e05404785ea354c383b2f53"
