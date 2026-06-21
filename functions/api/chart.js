@@ -16,10 +16,24 @@ export async function onRequestPost(context) {
   const ephemerisChart = await createEphemerisChart(context.env, payload);
 
   if (ephemerisChart) {
-    return json(ephemerisChart);
+    const publicChart = await savePublicChart(context.env, ephemerisChart, payload);
+
+    return json({ ...ephemerisChart, publicChart });
   }
 
-  return json(createMockChart(payload));
+  const mockChart = createMockChart(payload);
+  const publicChart = await savePublicChart(context.env, mockChart, payload);
+
+  return json({ ...mockChart, publicChart });
+}
+
+export async function onRequestGet(context) {
+  const charts = await listPublicCharts(context.env);
+
+  return json({
+    charts,
+    storageEnabled: Boolean(getPublicChartStore(context.env))
+  });
 }
 
 export function onRequestOptions() {
@@ -27,6 +41,167 @@ export function onRequestOptions() {
     status: 204,
     headers: corsHeaders()
   });
+}
+
+const PUBLIC_CHART_INDEX_KEY = "public-charts:index";
+const PUBLIC_CHART_PREFIX = "public-chart:";
+const PUBLIC_CHART_LIMIT = 60;
+
+async function savePublicChart(env, chart, payload) {
+  const store = getPublicChartStore(env);
+  const entry = createPublicChartEntry(chart, payload);
+
+  if (!store) {
+    return { saved: false, storageEnabled: false, entry };
+  }
+
+  await store.put(`${PUBLIC_CHART_PREFIX}${entry.id}`, JSON.stringify(entry));
+
+  const ids = await readPublicChartIndex(store);
+  const nextIds = [entry.id, ...ids.filter((id) => id !== entry.id)].slice(0, PUBLIC_CHART_LIMIT);
+  await store.put(PUBLIC_CHART_INDEX_KEY, JSON.stringify(nextIds));
+
+  return { saved: true, storageEnabled: true, entry };
+}
+
+async function listPublicCharts(env) {
+  const store = getPublicChartStore(env);
+
+  if (!store) {
+    return [];
+  }
+
+  const ids = await readPublicChartIndex(store);
+  const entries = await Promise.all(
+    ids.slice(0, PUBLIC_CHART_LIMIT).map(async (id) => {
+      const value = await store.get(`${PUBLIC_CHART_PREFIX}${id}`);
+
+      if (!value) {
+        return null;
+      }
+
+      try {
+        return sanitizePublicChartEntry(JSON.parse(value));
+      } catch {
+        return null;
+      }
+    })
+  );
+
+  return entries.filter(Boolean);
+}
+
+async function readPublicChartIndex(store) {
+  try {
+    const value = await store.get(PUBLIC_CHART_INDEX_KEY);
+    const ids = JSON.parse(value || "[]");
+
+    return Array.isArray(ids) ? ids.filter((id) => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function getPublicChartStore(env) {
+  return env?.PUBLIC_CHARTS || env?.MYHUMANOS_CHARTS || null;
+}
+
+function createPublicChartEntry(chart, payload) {
+  const hd = chart.humanDesign || {};
+  const firstName = firstNameOnly(payload.name);
+  const gates = (hd.gates || chart.gates || []).slice(0, 8).map((gate) => {
+    if (typeof gate === "number") {
+      return { gate, line: null, tone: "" };
+    }
+
+    return {
+      gate: Number(gate.gate),
+      line: Number.isFinite(Number(gate.line)) ? Number(gate.line) : null,
+      tone: String(gate.tone || "").slice(0, 48)
+    };
+  }).filter((gate) => Number.isFinite(gate.gate));
+
+  return sanitizePublicChartEntry({
+    id: createPublicChartId(payload, chart),
+    createdAt: new Date().toISOString(),
+    firstName,
+    type: chart.type || "Human Design",
+    strategy: chart.strategy || "",
+    authority: chart.authority || "",
+    profile: chart.profile || "",
+    signature: chart.signature || "",
+    notSelf: chart.notSelf || "",
+    centers: (hd.definedCenters || chart.centers || []).slice(0, 9),
+    gates,
+    provider: chart.provider || (chart.isMock ? "Preview" : "Swiss Ephemeris"),
+    isMock: Boolean(chart.isMock)
+  });
+}
+
+function sanitizePublicChartEntry(entry) {
+  const cleanLine = (line) => {
+    if (line === null || line === undefined || line === "") {
+      return null;
+    }
+
+    const numericLine = Number(line);
+
+    return Number.isInteger(numericLine) && numericLine >= 1 && numericLine <= 6 ? numericLine : null;
+  };
+
+  return {
+    id: String(entry.id || "").slice(0, 80),
+    createdAt: isIsoLike(entry.createdAt) ? entry.createdAt : new Date().toISOString(),
+    firstName: firstNameOnly(entry.firstName),
+    type: cleanPublicText(entry.type, 42),
+    strategy: cleanPublicText(entry.strategy, 42),
+    authority: cleanPublicText(entry.authority, 42),
+    profile: cleanPublicText(entry.profile, 16),
+    signature: cleanPublicText(entry.signature, 42),
+    notSelf: cleanPublicText(entry.notSelf, 42),
+    centers: Array.isArray(entry.centers) ? entry.centers.map((center) => cleanPublicText(center, 32)).filter(Boolean).slice(0, 9) : [],
+    gates: Array.isArray(entry.gates)
+      ? entry.gates.map((gate) => ({
+        gate: Number(gate.gate),
+        line: cleanLine(gate.line),
+        tone: cleanPublicText(gate.tone, 48)
+      })).filter((gate) => Number.isFinite(gate.gate)).slice(0, 8)
+      : [],
+    provider: cleanPublicText(entry.provider, 32),
+    isMock: Boolean(entry.isMock)
+  };
+}
+
+function createPublicChartId(payload, chart) {
+  const source = `${payload.name || ""}|${payload.birthDate || ""}|${payload.birthTime || ""}|${payload.birthPlace || ""}|${chart.type || ""}|${Date.now()}`;
+
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `chart-${hash(source).toString(16)}-${Date.now().toString(36)}`;
+}
+
+function firstNameOnly(value) {
+  const first = String(value || "Anonym")
+    .trim()
+    .split(/\s+/)[0]
+    .replace(/[^\p{L}\p{M}0-9._-]/gu, "")
+    .slice(0, 24);
+
+  return first || "Anonym";
+}
+
+function cleanPublicText(value, maxLength) {
+  return String(value || "")
+    .replace(/[<>{}[\]\\]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function isIsoLike(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value);
 }
 
 function validatePayload(payload) {
@@ -105,8 +280,39 @@ async function createEphemerisChart(env, payload) {
   }
 
   const data = await response.json();
+  const designDate = calculateDesignDate(payload, location);
+  let designData = null;
+  let designRequestBody = null;
 
-  return normalizeEphemerisResponse(data, payload, requestBody, location);
+  if (env?.HUMAN_DESIGN_DESIGN_CHART !== "false") {
+    designRequestBody = createAstrologyApiPayloadFromDateParts(designDate.localParts, location, true, payload.name || "MyHumanos Design");
+    const designResponse = await requestAstrologyChart(apiBaseUrl, endpoint, apiKey, designRequestBody);
+
+    if (designResponse.ok) {
+      designData = await designResponse.json();
+    }
+  }
+
+  let transitData = null;
+  let transitRequestBody = null;
+
+  if (env?.HUMAN_DESIGN_TRANSITS === "true" || payload.includeTransits === true || payload.includeTransits === "true") {
+    const transitDate = utcDateToLocalParts(new Date(), location.timezone);
+    transitRequestBody = createAstrologyApiPayloadFromDateParts(transitDate, location, true, "MyHumanos Transit");
+    const transitResponse = await requestAstrologyChart(apiBaseUrl, endpoint, apiKey, transitRequestBody);
+
+    if (transitResponse.ok) {
+      transitData = await transitResponse.json();
+    }
+  }
+
+  return normalizeEphemerisResponse(data, payload, requestBody, location, {
+    designData,
+    designRequestBody,
+    designDate,
+    transitData,
+    transitRequestBody
+  });
 }
 
 function requestAstrologyChart(apiBaseUrl, endpoint, apiKey, requestBody) {
@@ -124,13 +330,24 @@ function requestAstrologyChart(apiBaseUrl, endpoint, apiKey, requestBody) {
 function createAstrologyApiPayload(payload, location, includeCoordinates) {
   const [year, month, day] = payload.birthDate.split("-").map(Number);
   const [hour, minute] = payload.birthTime.split(":").map(Number);
+  return createAstrologyApiPayloadFromDateParts(
+    { year, month, day, hour, minute, second: 0 },
+    location,
+    includeCoordinates,
+    payload.name || "MyHumanos",
+    payload.houseSystem,
+    payload.zodiacType
+  );
+}
+
+function createAstrologyApiPayloadFromDateParts(parts, location, includeCoordinates, name, houseSystem = "P", zodiacType = "Tropic") {
   const birthData = {
-    year,
-    month,
-    day,
-    hour,
-    minute,
-    second: 0,
+    year: parts.year,
+    month: parts.month,
+    day: parts.day,
+    hour: parts.hour,
+    minute: parts.minute,
+    second: parts.second || 0,
     city: location.city,
     country_code: location.countryCode
   };
@@ -146,12 +363,12 @@ function createAstrologyApiPayload(payload, location, includeCoordinates) {
 
   return {
     subject: {
-      name: payload.name || "MyHumanos",
+      name,
       birth_data: birthData
     },
     options: {
-      house_system: payload.houseSystem || "P",
-      zodiac_type: payload.zodiacType || "Tropic",
+      house_system: houseSystem || "P",
+      zodiac_type: zodiacType || "Tropic",
       active_points: [
         "Sun",
         "Moon",
@@ -174,13 +391,15 @@ function createAstrologyApiPayload(payload, location, includeCoordinates) {
   };
 }
 
-function normalizeEphemerisResponse(data, payload, requestBody, location) {
+function normalizeEphemerisResponse(data, payload, requestBody, location, related = {}) {
   const points = extractAstrologyPoints(data);
+  const designPoints = related.designData ? extractAstrologyPoints(related.designData) : [];
+  const transitPoints = related.transitData ? extractAstrologyPoints(related.transitData) : [];
   const sun = findPoint(points, "Sun");
   const moon = findPoint(points, "Moon");
   const ascendant = findPoint(points, "Ascendant");
   const houses = extractHouses(data);
-  const humanDesign = createHumanDesignPreview(points, payload);
+  const humanDesign = createHumanDesignPreview(points, payload, designPoints, transitPoints);
   const utcTime = convertLocalTimeToUtcIso(payload.birthDate, payload.birthTime, location.timezone);
 
   return {
@@ -204,6 +423,14 @@ function normalizeEphemerisResponse(data, payload, requestBody, location) {
     points,
     houses,
     humanDesign,
+    design: {
+      utcTime: related.designDate?.utcTime || "",
+      localTime: related.designDate?.localTime || "",
+      points: designPoints,
+      request: related.designRequestBody,
+      calculation: "approx_88_solar_degrees"
+    },
+    transits: createTransitSummary(transitPoints, humanDesign),
     summary: humanDesign.summary,
     isMock: false,
     provider: "Swiss Ephemeris",
@@ -229,34 +456,23 @@ function normalizeEphemerisResponse(data, payload, requestBody, location) {
   };
 }
 
-function createHumanDesignPreview(points, payload) {
-  const activations = points
-    .filter((point) => Number.isFinite(point.longitude))
-    .map((point) => {
-      const gateInfo = gateFromLongitude(point.longitude);
-
-      return {
-        planet: point.name,
-        sign: point.sign,
-        degree: point.degree,
-        longitude: point.longitude,
-        house: point.house,
-        retrograde: point.retrograde,
-        ...gateInfo,
-        tone: gateTone(gateInfo.gate)
-      };
-    });
-  const sun = activations.find((activation) => activation.planet === "Sun") || activations[0];
-  const moon = activations.find((activation) => activation.planet === "Moon") || activations[1] || sun;
-  const ascendant = activations.find((activation) => activation.planet === "Ascendant") || activations[2] || sun;
-  const profile = `${sun?.line || 1}/${moon?.line || 3}`;
-  const definedCenters = deriveCentersFromActivations(activations);
-  const type = deriveHumanDesignType(definedCenters, activations);
-  const authority = deriveAuthority(definedCenters, moon);
+function createHumanDesignPreview(points, payload, designPoints = [], transitPoints = []) {
+  const personalityActivations = createActivations(points, "Personality");
+  const designActivations = createActivations(designPoints, "Design");
+  const activations = [...personalityActivations, ...designActivations];
+  const transitActivations = createActivations(transitPoints, "Transit");
+  const activeBodygraphActivations = activations.length ? activations : personalityActivations;
+  const personalitySun = personalityActivations.find((activation) => activation.planet === "Sun") || personalityActivations[0];
+  const designSun = designActivations.find((activation) => activation.planet === "Sun") || null;
+  const profile = `${personalitySun?.line || 1}/${designSun?.line || "?"}`;
+  const channels = deriveDefinedChannels(activeBodygraphActivations);
+  const definedCenters = deriveCentersFromChannels(channels);
+  const type = deriveHumanDesignType(definedCenters, channels);
+  const authority = deriveAuthority(definedCenters, channels);
   const strategy = strategyForType(type);
   const notSelf = notSelfForType(type);
   const signature = signatureForType(type);
-  const gates = uniqueByGate(activations).slice(0, 14);
+  const gates = uniqueByGate(activeBodygraphActivations).slice(0, 18);
 
   return {
     name: payload.name || "Dein Chart",
@@ -267,12 +483,72 @@ function createHumanDesignPreview(points, payload) {
     signature,
     notSelf,
     definedCenters,
-    openCenters: ["Kopf", "Ajna", "Kehle", "G-Zentrum", "Ego", "Milz", "Sakral", "Solarplexus", "Wurzel"].filter(
-      (center) => !definedCenters.includes(center)
-    ),
+    openCenters: ALL_CENTERS.filter((center) => !definedCenters.includes(center)),
     gates,
-    activations,
-    summary: `${type} mit ${authority}-Autoritaet und Profil ${profile}. Die Tore und Linien werden aus echten Swiss-Ephemeris-Positionen berechnet; Zentren, Typ und Autoritaet sind eine MyHumanOS-Preview, bis der vollstaendige Design-Koerpergraph aktiviert ist.`
+    channels,
+    activations: activeBodygraphActivations,
+    personalityActivations,
+    designActivations,
+    transitActivations,
+    calculationNotes: [
+      designSun
+        ? "Profil = Personality-Sonnenlinie / Design-Sonnenlinie."
+        : "Profil unvollstaendig: Fuer die zweite Profilzahl fehlt der Design-Chart. Aktiviere HUMAN_DESIGN_DESIGN_CHART oder pruefe den API-Endpunkt.",
+      "Typ, Zentren und Autoritaet werden aus vollstaendig definierten Kanaelen abgeleitet."
+    ],
+    summary: designSun
+      ? `${type} mit ${authority}-Autoritaet und Profil ${profile}. Personality und Design werden getrennt gelesen; definierte Zentren entstehen nur dort, wo komplette Kanaele aktiviert sind.`
+      : `${type} mit ${authority}-Autoritaet. Die erste Profilzahl kommt aus der Personality-Sonne; die zweite braucht den Design-Zeitpunkt, etwa 88 Sonnenbogen-Grad vor der Geburt.`
+  };
+}
+
+function createActivations(points, layer) {
+  return points
+    .filter((point) => Number.isFinite(point.longitude))
+    .map((point) => {
+      const gateInfo = gateFromLongitude(point.longitude);
+
+      return {
+        planet: point.name,
+        layer,
+        sign: point.sign,
+        degree: point.degree,
+        longitude: point.longitude,
+        house: point.house,
+        retrograde: point.retrograde,
+        ...gateInfo,
+        tone: gateTone(gateInfo.gate)
+      };
+    });
+}
+
+function createTransitSummary(transitPoints, humanDesign) {
+  const transitActivations = createActivations(transitPoints, "Transit");
+
+  if (!transitActivations.length) {
+    return {
+      enabled: false,
+      generatedAt: null,
+      gates: [],
+      channels: [],
+      summary: "Tagestransite sind vorbereitet, aber noch nicht automatisch aktiv. So bleibt dein AstroAPI-Kontingent geschont."
+    };
+  }
+
+  const natalActivations = Array.isArray(humanDesign.activations) ? humanDesign.activations : [];
+  const natalChannelNames = new Set((humanDesign.channels || []).map((channel) => channel.name));
+  const transitChannels = deriveDefinedChannels([...natalActivations, ...transitActivations])
+    .filter((channel) => !natalChannelNames.has(channel.name));
+  const gates = uniqueByGate(transitActivations).slice(0, 12);
+
+  return {
+    enabled: true,
+    generatedAt: new Date().toISOString(),
+    gates,
+    channels: transitChannels,
+    summary: transitChannels.length
+      ? `Heute beruehren die Transite ${gates.length} Tore und oeffnen ${transitChannels.length} temporaere Kanal-Themen.`
+      : `Heute beruehren die Transite ${gates.length} Tore, ohne einen neuen kompletten Kanal zu bilden.`
   };
 }
 
@@ -409,6 +685,43 @@ function normalizeTimezone(value) {
   return timezone;
 }
 
+function calculateDesignDate(payload, location) {
+  const birthUtcIso = convertLocalTimeToUtcIso(payload.birthDate, payload.birthTime, location.timezone);
+  const birthUtc = birthUtcIso ? new Date(birthUtcIso) : new Date(`${payload.birthDate}T${payload.birthTime}:00Z`);
+  const designUtc = new Date(birthUtc.getTime() - 88 * 24 * 60 * 60 * 1000);
+  const localParts = utcDateToLocalParts(designUtc, location.timezone);
+
+  return {
+    utcTime: designUtc.toISOString(),
+    localTime: `${String(localParts.year).padStart(4, "0")}-${String(localParts.month).padStart(2, "0")}-${String(localParts.day).padStart(2, "0")} ${String(localParts.hour).padStart(2, "0")}:${String(localParts.minute).padStart(2, "0")} ${location.timezone}`,
+    localParts
+  };
+}
+
+function utcDateToLocalParts(date, timezone) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone || "Europe/Berlin",
+    hour12: false,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, Number(part.value)]));
+
+  return {
+    year: values.year,
+    month: values.month,
+    day: values.day,
+    hour: values.hour,
+    minute: values.minute,
+    second: values.second
+  };
+}
+
 function convertLocalTimeToUtcIso(dateValue, timeValue, timezone) {
   try {
     const [year, month, day] = dateValue.split("-").map(Number);
@@ -518,39 +831,84 @@ function uniqueByGate(activations) {
   });
 }
 
-function deriveCentersFromActivations(activations) {
-  const centerByGate = {
-    Kopf: [61, 63, 64], Ajna: [4, 11, 17, 24, 43, 47], Kehle: [8, 12, 16, 20, 23, 31, 33, 35, 45, 56, 62],
-    "G-Zentrum": [1, 2, 7, 10, 13, 15, 25, 46], Ego: [21, 26, 40, 51], Milz: [18, 28, 32, 44, 48, 50, 57],
-    Sakral: [3, 5, 9, 14, 27, 29, 34, 42, 59], Solarplexus: [6, 22, 30, 36, 37, 49, 55], Wurzel: [19, 38, 39, 41, 52, 53, 54, 58, 60]
-  };
-  const gates = activations.map((activation) => activation.gate);
+const ALL_CENTERS = ["Kopf", "Ajna", "Kehle", "G-Zentrum", "Ego", "Milz", "Sakral", "Solarplexus", "Wurzel"];
+const MOTOR_CENTERS = ["Ego", "Solarplexus", "Sakral", "Wurzel"];
+const CHANNEL_DEFINITIONS = [
+  [64, 47, "Kopf", "Ajna"], [61, 24, "Kopf", "Ajna"], [63, 4, "Kopf", "Ajna"],
+  [17, 62, "Ajna", "Kehle"], [43, 23, "Ajna", "Kehle"], [11, 56, "Ajna", "Kehle"],
+  [31, 7, "Kehle", "G-Zentrum"], [8, 1, "Kehle", "G-Zentrum"], [33, 13, "Kehle", "G-Zentrum"],
+  [20, 10, "Kehle", "G-Zentrum"], [25, 51, "G-Zentrum", "Ego"],
+  [2, 14, "G-Zentrum", "Sakral"], [5, 15, "Sakral", "G-Zentrum"], [29, 46, "Sakral", "G-Zentrum"], [10, 34, "G-Zentrum", "Sakral"],
+  [20, 34, "Kehle", "Sakral"], [57, 34, "Milz", "Sakral"], [27, 50, "Sakral", "Milz"],
+  [59, 6, "Sakral", "Solarplexus"], [3, 60, "Sakral", "Wurzel"], [42, 53, "Sakral", "Wurzel"], [9, 52, "Sakral", "Wurzel"],
+  [20, 57, "Kehle", "Milz"], [16, 48, "Kehle", "Milz"], [10, 57, "G-Zentrum", "Milz"],
+  [44, 26, "Milz", "Ego"], [32, 54, "Milz", "Wurzel"], [28, 38, "Milz", "Wurzel"], [18, 58, "Milz", "Wurzel"],
+  [21, 45, "Ego", "Kehle"], [37, 40, "Solarplexus", "Ego"],
+  [12, 22, "Kehle", "Solarplexus"], [35, 36, "Kehle", "Solarplexus"],
+  [19, 49, "Wurzel", "Solarplexus"], [39, 55, "Wurzel", "Solarplexus"], [41, 30, "Wurzel", "Solarplexus"]
+].map(([gateA, gateB, from, to]) => ({ gateA, gateB, from, to }));
 
-  return Object.entries(centerByGate)
-    .filter(([, centerGates]) => centerGates.some((gate) => gates.includes(gate)))
-    .map(([center]) => center);
+function deriveDefinedChannels(activations) {
+  const gates = new Set(activations.map((activation) => activation.gate));
+
+  return CHANNEL_DEFINITIONS
+    .filter((channel) => gates.has(channel.gateA) && gates.has(channel.gateB))
+    .map((channel) => ({
+      ...channel,
+      name: `${channel.gateA}-${channel.gateB}`,
+      gates: [channel.gateA, channel.gateB]
+    }));
 }
 
-function deriveHumanDesignType(centers, activations) {
+function deriveCentersFromChannels(channels) {
+  return [...new Set(channels.flatMap((channel) => [channel.from, channel.to]))].filter((center) => ALL_CENTERS.includes(center));
+}
+
+function deriveHumanDesignType(centers, channels) {
   const hasSacral = centers.includes("Sakral");
   const hasThroat = centers.includes("Kehle");
-  const motorGates = [21, 26, 34, 35, 45, 12, 22, 36];
-  const hasMotorToThroatHint = hasThroat && activations.some((activation) => motorGates.includes(activation.gate));
+  const hasMotorToThroatHint = hasThroat && MOTOR_CENTERS.some((motor) => isCenterConnectedTo("Kehle", motor, channels));
 
-  if (centers.length <= 1) return "Reflektor";
+  if (!centers.length) return "Reflektor";
   if (hasSacral && hasMotorToThroatHint) return "Manifestierender Generator";
   if (hasSacral) return "Generator";
   if (hasMotorToThroatHint) return "Manifestor";
   return "Projektor";
 }
 
-function deriveAuthority(centers, moon) {
+function isCenterConnectedTo(start, target, channels) {
+  if (start === target) return true;
+  const queue = [start];
+  const seen = new Set(queue);
+
+  while (queue.length) {
+    const center = queue.shift();
+    const neighbors = channels.flatMap((channel) => {
+      if (channel.from === center) return [channel.to];
+      if (channel.to === center) return [channel.from];
+      return [];
+    });
+
+    for (const neighbor of neighbors) {
+      if (neighbor === target) return true;
+      if (!seen.has(neighbor)) {
+        seen.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return false;
+}
+
+function deriveAuthority(centers, channels) {
   if (centers.includes("Solarplexus")) return "Emotional";
   if (centers.includes("Sakral")) return "Sakral";
   if (centers.includes("Milz")) return "Milz";
   if (centers.includes("Ego")) return "Ego";
   if (centers.includes("G-Zentrum")) return "Selbst-projiziert";
-  return moon?.sign ? `lunar / ${moon.sign}` : "lunar";
+  if (centers.some((center) => ["Kopf", "Ajna", "Kehle"].includes(center))) return "Mental / Umgebung";
+  return channels.length ? "Keine innere Autoritaet erkannt" : "Lunar";
 }
 
 function strategyForType(type) {
@@ -795,7 +1153,7 @@ function json(body, status = 200) {
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type"
   };
 }
