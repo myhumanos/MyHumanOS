@@ -1,4 +1,4 @@
-import { onRequestOptions, onRequestPost } from "../functions/api/chart.js";
+import { onRequestGet, onRequestOptions, onRequestPost } from "../functions/api/chart.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -18,6 +18,24 @@ export default {
         headers: {
           "Content-Type": "application/json; charset=utf-8",
           Allow: "POST, OPTIONS"
+        }
+      });
+    }
+
+    if (url.pathname === "/api/charts") {
+      if (request.method === "GET") {
+        return onRequestGet({ request, env, ctx });
+      }
+
+      if (request.method === "OPTIONS") {
+        return onRequestOptions({ request, env, ctx });
+      }
+
+      return new Response(JSON.stringify({ error: "Method not allowed." }), {
+        status: 405,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          Allow: "GET, OPTIONS"
         }
       });
     }
