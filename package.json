@@ -1,0 +1,22 @@
+{
+  "name": "myhumanos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MyHumanos Cloudflare Pages app with a Human Design chart intake and mock API boundary.",
+  "scripts": {
+    "build": "echo Cloudflare Worker with static assets ready",
+    "preview": "npx wrangler dev",
+    "deploy": "npx wrangler deploy",
+    "export:charts": "node scripts/export-public-charts.cjs",
+    "save:chart": "node scripts/calculate-and-save-chart.cjs",
+    "validate:chart": "node scripts/validate-chart-case.cjs",
+    "deploy:production": "npm run build && npm run preview -- --env production",
+    "export:charts:public": "NODE_ENV=production node scripts/export-public-charts.cjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "wrangler": "^4.103.0"
+  }
+}
