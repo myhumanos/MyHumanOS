@@ -158,7 +158,7 @@ function getChartCacheStore(env) {
 
 function createChartCacheKey(payload) {
   const normalized = normalizeChartCachePayload(payload);
-  return `chart-cache:v2:${hash(JSON.stringify(normalized)).toString(16)}`;
+  return `chart-cache:v3:${hash(JSON.stringify(normalized)).toString(16)}`;
 }
 
 function normalizeChartCachePayload(payload) {
@@ -169,7 +169,6 @@ function normalizeChartCachePayload(payload) {
     includeTransits: normalizeCacheBool(payload?.includeTransits),
     latitude: normalizeCacheCoordinate(payload?.latitude ?? payload?.lat),
     longitude: normalizeCacheCoordinate(payload?.longitude ?? payload?.lng ?? payload?.lon),
-    name: String(payload?.name || "").trim().replace(/\s+/g, " "),
     houseSystem: String(payload?.houseSystem || "P").trim(),
     zodiacType: String(payload?.zodiacType || "Tropic").trim(),
     timezone: String(payload?.timezone || "").trim()
