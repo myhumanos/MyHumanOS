@@ -1,5 +1,3 @@
-import { corsHeaders } from "../api/chart.js";
-
 export async function onRequestGet(context) {
   const env = context.env;
 
@@ -49,4 +47,12 @@ function json(body, status = 200) {
       ...corsHeaders()
     }
   });
+}
+
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type"
+  };
 }
