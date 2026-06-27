@@ -6,6 +6,73 @@ const publicChartList = document.querySelector("#public-chart-list");
 const publicChartStatus = document.querySelector("#public-chart-status");
 const context = canvas.getContext("2d");
 
+const birthPlaceInput = document.querySelector("#birth-place");
+const geoSuggestions = document.querySelector("#geo-suggestions");
+let selectedGeoResult = null;
+let geoDebounceTimer = null;
+
+if (birthPlaceInput && geoSuggestions) {
+  birthPlaceInput.addEventListener("input", () => {
+    clearTimeout(geoDebounceTimer);
+    const query = birthPlaceInput.value.trim();
+    if (query.length < 3) {
+      geoSuggestions.innerHTML = "";
+      selectedGeoResult = null;
+      return;
+    }
+    geoDebounceTimer = setTimeout(() => fetchGeoSuggestions(query), 300);
+  });
+
+  birthPlaceInput.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      geoSuggestions.innerHTML = "";
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!birthPlaceInput.contains(e.target) && !geoSuggestions.contains(e.target)) {
+      geoSuggestions.innerHTML = "";
+    }
+  });
+}
+
+async function fetchGeoSuggestions(query) {
+  try {
+    const response = await fetch(`/api/geo?q=${encodeURIComponent(query)}`);
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!data.ok || !data.results?.length) {
+      geoSuggestions.innerHTML = "";
+      return;
+    }
+    renderGeoSuggestions(data.results);
+  } catch (e) {
+    geoSuggestions.innerHTML = "";
+  }
+}
+
+function renderGeoSuggestions(results) {
+  geoSuggestions.innerHTML = results.map((r, i) => `
+    <div class="geo-suggestion" role="option" tabindex="0" data-index="${i}">
+      <strong>${escapeHtml(r.city || r.displayName.split(",")[0])}</strong>
+      <span>${escapeHtml(r.displayName)}</span>
+    </div>
+  `).join("");
+
+  geoSuggestions.querySelectorAll(".geo-suggestion").forEach((el) => {
+    el.addEventListener("click", () => selectGeoResult(results[Number(el.dataset.index)]));
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") selectGeoResult(results[Number(el.dataset.index)]);
+    });
+  });
+}
+
+function selectGeoResult(result) {
+  selectedGeoResult = result;
+  birthPlaceInput.value = result.displayName;
+  geoSuggestions.innerHTML = "";
+}
+
 const colors = {
   ink: "#f7f1ff",
   muted: "#b4a6c7",
@@ -61,6 +128,14 @@ form.addEventListener("submit", async (event) => {
   const submitButton = form.querySelector("button");
   const payload = Object.fromEntries(new FormData(form).entries());
 
+  // Add geo coordinates if a location was selected
+  if (selectedGeoResult) {
+    payload.latitude = selectedGeoResult.latitude;
+    payload.longitude = selectedGeoResult.longitude;
+    payload.timezone = selectedGeoResult.timezone;
+    payload.birthPlaceLabel = selectedGeoResult.displayName;
+  }
+
   submitButton.disabled = true;
   submitButton.querySelector("span").textContent = "Berechne live...";
   panel.innerHTML = loadingTemplate();
@@ -69,6 +144,7 @@ form.addEventListener("submit", async (event) => {
     const chart = await fetchChart(payload);
     renderReading(chart, payload);
     drawChart(chart);
+    drawSvgBodyGraph(chart);
     providerLabel.textContent = chart.isMock ? "Fallback Preview" : "Swiss Ephemeris live";
     addPublicChartFromResult(chart, payload);
   } catch (error) {
@@ -590,6 +666,107 @@ function hash(value) {
   }, 2166136261);
 }
 
+function drawSvgBodyGraph(chart) {
+  const container = document.querySelector("#svg-bodygraph");
+  if (!container) return;
+
+  const hd = chart.humanDesign || {};
+  const definedCenters = hd.definedCenters || chart.centers || [];
+  const gates = hd.gates || chart.gates?.map((gate) => ({ gate, line: 1 })) || [];
+  const activeGates = new Set(gates.map((item) => item.gate));
+
+  const centerLayoutSvg = [
+    { name: "Kopf", x: 200, y: 60, shape: "triangle" },
+    { name: "Ajna", x: 200, y: 130, shape: "triangleDown" },
+    { name: "Kehle", x: 200, y: 210, shape: "square" },
+    { name: "G-Zentrum", x: 200, y: 300, shape: "diamond" },
+    { name: "Ego", x: 300, y: 330, shape: "small" },
+    { name: "Milz", x: 100, y: 370, shape: "triangleRight" },
+    { name: "Solarplexus", x: 320, y: 390, shape: "triangleLeft" },
+    { name: "Sakral", x: 200, y: 410, shape: "square" },
+    { name: "Wurzel", x: 200, y: 500, shape: "square" }
+  ];
+
+  const channelPairs = [
+    [64, 47, "Kopf", "Ajna"], [61, 24, "Kopf", "Ajna"], [63, 4, "Kopf", "Ajna"],
+    [17, 62, "Ajna", "Kehle"], [43, 23, "Ajna", "Kehle"], [11, 56, "Ajna", "Kehle"],
+    [1, 8, "G-Zentrum", "Kehle"], [7, 31, "G-Zentrum", "Kehle"], [13, 33, "G-Zentrum", "Kehle"],
+    [10, 34, "G-Zentrum", "Sakral"], [14, 2, "Sakral", "G-Zentrum"], [29, 46, "Sakral", "G-Zentrum"],
+    [59, 6, "Sakral", "Solarplexus"], [19, 49, "Wurzel", "Solarplexus"], [38, 28, "Wurzel", "Milz"],
+    [54, 32, "Wurzel", "Milz"], [21, 45, "Ego", "Kehle"], [26, 44, "Ego", "Milz"]
+  ];
+
+  const centerColors = ["#83e6ff", "#ff8fc7", "#dfb86d", "#8f5cff", "#9fb7ff"];
+  const activeColor = "#dfb86d";
+  const inactiveLine = "rgba(232, 213, 255, 0.16)";
+  const activeLine = "#dfb86d";
+
+  let svg = `<svg viewBox="0 0 400 560" xmlns="http://www.w3.org/2000/svg" class="humanos-bodygraph">`;
+  svg += `<defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+  svg += `<rect width="400" height="560" fill="#0c0711" rx="12"/>`;
+
+  // Draw channels
+  channelPairs.forEach(([a, b, from, to]) => {
+    const start = centerLayoutSvg.find((c) => c.name === from);
+    const end = centerLayoutSvg.find((c) => c.name === to);
+    if (!start || !end) return;
+    const active = activeGates.has(a) && activeGates.has(b);
+    const stroke = active ? activeLine : inactiveLine;
+    const width = active ? 4 : 2;
+    svg += `<line x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round" />`;
+  });
+
+  // Draw centers
+  centerLayoutSvg.forEach((center, index) => {
+    const active = definedCenters.includes(center.name);
+    const fill = active ? centerColors[index % centerColors.length] : "rgba(232, 213, 255, 0.09)";
+    const stroke = active ? "#f7f1ff" : "rgba(232, 213, 255, 0.22)";
+    const strokeWidth = active ? 2.5 : 1.5;
+    const filter = active ? 'filter="url(#glow)"' : "";
+
+    let shapePath = "";
+    if (center.shape === "triangle") {
+      shapePath = `M${center.x},${center.y - 22} L${center.x - 24},${center.y + 18} L${center.x + 24},${center.y + 18} Z`;
+    } else if (center.shape === "triangleDown") {
+      shapePath = `M${center.x - 25},${center.y - 18} L${center.x + 25},${center.y - 18} L${center.x},${center.y + 22} Z`;
+    } else if (center.shape === "diamond") {
+      shapePath = `M${center.x},${center.y - 26} L${center.x + 28},${center.y} L${center.x},${center.y + 26} L${center.x - 28},${center.y} Z`;
+    } else if (center.shape === "triangleLeft") {
+      shapePath = `M${center.x - 27},${center.y} L${center.x + 21},${center.y - 23} L${center.x + 21},${center.y + 23} Z`;
+    } else if (center.shape === "triangleRight") {
+      shapePath = `M${center.x + 27},${center.y} L${center.x - 21},${center.y - 23} L${center.x - 21},${center.y + 23} Z`;
+    } else {
+      const w = center.shape === "small" ? 54 : 60;
+      const h = center.shape === "small" ? 34 : 40;
+      const r = center.shape === "small" ? 7 : 6;
+      shapePath = `M${center.x - w/2 + r},${center.y - h/2} L${center.x + w/2 - r},${center.y - h/2} Q${center.x + w/2},${center.y - h/2} ${center.x + w/2},${center.y - h/2 + r} L${center.x + w/2},${center.y + h/2 - r} Q${center.x + w/2},${center.y + h/2} ${center.x + w/2 - r},${center.y + h/2} L${center.x - w/2 + r},${center.y + h/2} Q${center.x - w/2},${center.y + h/2} ${center.x - w/2},${center.y + h/2 - r} L${center.x - w/2},${center.y - h/2 + r} Q${center.x - w/2},${center.y - h/2} ${center.x - w/2 + r},${center.y - h/2} Z`;
+    }
+
+    svg += `<path d="${shapePath}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" ${filter} />`;
+    svg += `<text x="${center.x}" y="${center.y + 1}" fill="${active ? '#160d20' : '#b4a6c7'}" font-size="11" font-weight="800" font-family="Inter, sans-serif" text-anchor="middle" dominant-baseline="middle">${center.name}</text>`;
+  });
+
+  // Draw active gates as small dots
+  const cx = 200;
+  const cy = 280;
+  const radius = 180;
+  gates.slice(0, 18).forEach((item, index) => {
+    const angle = (Math.PI * 2 * ((item.gate || 1) % 64)) / 64 - Math.PI / 2;
+    const color = ["#83e6ff", "#ff8fc7", "#dfb86d", "#8f5cff", "#9fb7ff", "#b8f0c2"][index % 6];
+    const gx = cx + Math.cos(angle) * (radius - 24);
+    const gy = cy + Math.sin(angle) * (radius - 24);
+    svg += `<circle cx="${gx}" cy="${gy}" r="10" fill="${color}" stroke="rgba(22, 13, 32, 0.6)" stroke-width="1.5" />`;
+    svg += `<text x="${gx}" y="${gy + 1}" fill="#160d20" font-size="9" font-weight="800" font-family="Inter, sans-serif" text-anchor="middle" dominant-baseline="middle">${item.gate}</text>`;
+  });
+
+  // Label
+  svg += `<text x="200" y="28" fill="#f7f1ff" font-size="16" font-weight="900" font-family="Inter, sans-serif" text-anchor="middle">${escapeHtml(chart.type || "Human Design")}</text>`;
+  svg += `<text x="200" y="46" fill="#b4a6c7" font-size="10" font-weight="800" font-family="Inter, sans-serif" text-anchor="middle">${escapeHtml(chart.authority || "Autoritaet")} - Profil ${escapeHtml(chart.profile || "n/a")}</text>`;
+
+  svg += `</svg>`;
+  container.innerHTML = svg;
+}
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",
@@ -599,4 +776,3 @@ function escapeHtml(value) {
     "'": "&#039;"
   })[char]);
 }
-
