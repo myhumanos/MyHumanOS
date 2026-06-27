@@ -13,18 +13,61 @@ export async function onRequestPost(context) {
     return json({ error: validationError }, 422);
   }
 
+  // MYHUMANOS_CACHE layer
+  const cacheKey = buildChartCacheKey(payload);
+  const cacheStore = context.env?.MYHUMANOS_CACHE;
+
+  if (cacheStore) {
+    try {
+      const cached = await cacheStore.get(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return json({ ...parsed, cached: true, cacheKey });
+      }
+    } catch (cacheReadError) {
+      // Ignore cache read errors, continue with live computation
+    }
+  }
+
   const ephemerisChart = await createEphemerisChart(context.env, payload);
 
   if (ephemerisChart) {
     const publicChart = await savePublicChart(context.env, ephemerisChart, payload);
+    const result = { ...ephemerisChart, publicChart, cached: false, cacheKey };
 
-    return json({ ...ephemerisChart, publicChart });
+    if (cacheStore) {
+      try {
+        await cacheStore.put(cacheKey, JSON.stringify(result), { expirationTtl: 60 * 60 * 24 * 30 }); // 30 days
+      } catch (cacheWriteError) {
+        // Ignore cache write errors
+      }
+    }
+
+    return json(result);
   }
 
   const mockChart = createMockChart(payload);
   const publicChart = await savePublicChart(context.env, mockChart, payload);
+  const result = { ...mockChart, publicChart, cached: false, cacheKey };
 
-  return json({ ...mockChart, publicChart });
+  if (cacheStore) {
+    try {
+      await cacheStore.put(cacheKey, JSON.stringify(result), { expirationTtl: 60 * 60 * 24 * 30 }); // 30 days
+    } catch (cacheWriteError) {
+      // Ignore cache write errors
+    }
+  }
+
+  return json(result);
+}
+
+function buildChartCacheKey(payload) {
+  const date = payload.birthDate || "unknown";
+  const time = payload.birthTime || "unknown";
+  const lat = Number.isFinite(Number(payload.latitude)) ? Number(payload.latitude).toFixed(4) : "auto";
+  const lon = Number.isFinite(Number(payload.longitude)) ? Number(payload.longitude).toFixed(4) : "auto";
+  const tz = String(payload.timezone || "auto").toLowerCase().replace(/[^a-z0-9]/g, "-");
+  return `chart:${date}:${time}:${lat}:${lon}:${tz}`;
 }
 
 export async function onRequestGet(context) {
