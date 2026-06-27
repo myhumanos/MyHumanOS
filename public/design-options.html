@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Vier alternative Designrichtungen für MyHumanOS, getrennt vom aktuellen Launch-Stand.">
+    <title>MyHumanOS | Designoptionen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/design-options.css">
+  </head>
+  <body data-theme="operating-system">
+    <header class="option-header">
+      <a class="brand" href="/">
+        <span>MH</span>
+        <strong>MyHumanOS</strong>
+      </a>
+      <nav class="theme-tabs" aria-label="Designrichtungen">
+        <button class="active" type="button" data-theme-option="operating-system">OS</button>
+        <button type="button" data-theme-option="editorial-oracle">Oracle</button>
+        <button type="button" data-theme-option="celestial-sanctuary">Sanctuary</button>
+        <button type="button" data-theme-option="community-lab">Lab</button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="showcase">
+        <div class="showcase-copy">
+          <p class="kicker">Designoptionen abseits vom Launch</p>
+          <h1 id="theme-title">MyHumanOS als klares energetisches Betriebssystem</h1>
+          <p id="theme-summary">Eine reduzierte, produktnahe Richtung: weniger Ritual, mehr Präzision. Ideal, wenn Chart, Autorität, Profil und Gates wie ein persönliches Dashboard wirken sollen.</p>
+          <div class="score-strip" aria-label="Designbewertung">
+            <article>
+              <span>Gefühl</span>
+              <strong id="theme-feel">Präzise</strong>
+            </article>
+            <article>
+              <span>Conversion</span>
+              <strong id="theme-conversion">Hoch</strong>
+            </article>
+            <article>
+              <span>Aufwand</span>
+              <strong id="theme-effort">Mittel</strong>
+            </article>
+          </div>
+        </div>
+
+        <div class="visual-frame" aria-label="Visuelle Designrichtung">
+          <img src="/assets/design-directions-moodboard.png" alt="">
+          <div class="device-preview">
+            <div class="preview-top">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="preview-layout">
+              <aside>
+                <b></b><b></b><b></b>
+              </aside>
+              <section>
+                <div class="chart-orbit"></div>
+                <div class="preview-lines">
+                  <i></i><i></i><i></i><i></i>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="option-grid" aria-label="Alle Designrichtungen">
+        <button class="option-card selected" type="button" data-theme-option="operating-system">
+          <span>01</span>
+          <strong>HumanOS Dashboard</strong>
+          <p>Funktional, schnell erfassbar, sehr geeignet für den Chart-Rechner.</p>
+        </button>
+        <button class="option-card" type="button" data-theme-option="editorial-oracle">
+          <span>02</span>
+          <strong>Editorial Oracle</strong>
+          <p>Magazinartige Leseführung mit viel Typografie und persönlichem Reading.</p>
+        </button>
+        <button class="option-card" type="button" data-theme-option="celestial-sanctuary">
+          <span>03</span>
+          <strong>Celestial Sanctuary</strong>
+          <p>Emotionaler, atmosphärischer Raum für Retreat-, Lexikon- und Ritual-Gefühl.</p>
+        </button>
+        <button class="option-card" type="button" data-theme-option="community-lab">
+          <span>04</span>
+          <strong>Community Lab</strong>
+          <p>Moderner Social-Product-Look für Öffentliche Charts und Vergleichbarkeit.</p>
+        </button>
+      </section>
+
+      <section class="mockup-shell" aria-label="Seitenausschnitt">
+        <aside class="mockup-panel">
+          <span class="panel-label">Chart Intake</span>
+          <h2>Geburtsdaten</h2>
+          <label>Name<input value="Justin" readonly></label>
+          <label>Geburtsdatum<input value="1990-06-22" readonly></label>
+          <label>Geburtsort<input value="Berlin, DE" readonly></label>
+          <button type="button">Chart berechnen</button>
+        </aside>
+
+        <section class="mockup-stage">
+          <div class="stage-head">
+            <span>Bodygraph Preview</span>
+            <strong>Swiss Ephemeris live</strong>
+          </div>
+          <div class="bodygraph">
+            <i class="head"></i>
+            <i class="ajna"></i>
+            <i class="throat"></i>
+            <i class="g"></i>
+            <i class="ego"></i>
+            <i class="spleen"></i>
+            <i class="solar"></i>
+            <i class="sacral"></i>
+            <i class="root"></i>
+          </div>
+        </section>
+
+        <aside class="reading-stack">
+          <article>
+            <span>Typ</span>
+            <strong>Generator</strong>
+            <p>Das lebendige Ja im Körper.</p>
+          </article>
+          <article>
+            <span>Autorität</span>
+            <strong>Sakral</strong>
+            <p>Antwort vor Erklärung.</p>
+          </article>
+          <article>
+            <span>Profil</span>
+            <strong>2/4</strong>
+            <p>Rückzug, Talent und Netzwerk.</p>
+          </article>
+        </aside>
+      </section>
+
+      <section class="decision">
+        <div>
+          <span class="panel-label">Empfehlung</span>
+          <h2 id="theme-recommendation">Als robuste Basis würde ich mit HumanOS Dashboard starten.</h2>
+        </div>
+        <p id="theme-next">Diese Richtung lässt sich am besten mit der vorhandenen Rechnerstruktur verbinden und kann später mit emotionaleren Sanctuary-Elementen angereichert werden.</p>
+      </section>
+    </main>
+
+    <script src="/design-options.js" defer></script>
+  </body>
+</html>

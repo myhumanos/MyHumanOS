@@ -1,0 +1,34 @@
+name = "myhumanos"
+main = "src/worker.js"
+compatibility_date = "2026-06-21"
+workers_dev = true
+
+[vars]
+HUMAN_DESIGN_TRANSITS = "false"
+HUMAN_DESIGN_DESIGN_REFINEMENT_STEPS = "1"
+MYHUMANOS_ADMIN_EMAILS = "test+e7974308@myhumanos.local"
+
+[[routes]]
+pattern = "myhumanos.de"
+custom_domain = true
+
+[[routes]]
+pattern = "www.myhumanos.de"
+custom_domain = true
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+[[kv_namespaces]]
+binding = "PUBLIC_CHARTS"
+id = "16b954724e05404785ea354c383b2f53"
+
+[[kv_namespaces]]
+binding = "MYHUMANOS_CACHE"
+id = "e346b9911e584890b0a30d8de1d8e610"
+
+# Für öffentliche Community-Charts in Cloudflare einen KV Namespace erstellen
+# und als PUBLIC_CHARTS binden. Danach speichert /api/chart automatisch
+# nur die öffentlichen Kurzprofile: Vorname, Typ, Autorität, Profil, Zentren, Gates.

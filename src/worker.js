@@ -1,5 +1,7 @@
 import { onRequestGet, onRequestOptions, onRequestPost } from "../functions/api/chart.js";
 import { onAuthRequest } from "../functions/api/auth.js";
+import { onCacheTestRequest } from "../functions/api/cache-test.js";
+import { onGeoRequest } from "../functions/api/geo.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -28,6 +30,14 @@ export default {
           Allow: "POST, OPTIONS"
         }
       });
+    }
+
+    if (url.pathname === "/api/cache-test") {
+      return onCacheTestRequest({ request, env, ctx });
+    }
+
+    if (url.pathname === "/api/geo") {
+      return onGeoRequest({ request, env, ctx });
     }
 
     // Verarbeite Auth-API-Anfragen

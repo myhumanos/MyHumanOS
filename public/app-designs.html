@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Mobile-first App-Designkonzepte für MyHumanOS, inspiriert von modernen iOS Human-Design-Apps.">
+    <title>MyHumanOS | App Design Concepts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/app-designs.css">
+  </head>
+  <body data-mode="stella-soft">
+    <header class="topbar">
+      <a class="brand" href="/design-options.html">
+        <span>MH</span>
+        <strong>App Concepts</strong>
+      </a>
+      <nav class="mode-tabs" aria-label="App Designrichtungen">
+        <button class="active" type="button" data-mode-option="stella-soft">Soft OS</button>
+        <button type="button" data-mode-option="ritual-feed">Ritual Feed</button>
+        <button type="button" data-mode-option="bodygraph-pro">Bodygraph Pro</button>
+        <button type="button" data-mode-option="social-pulse">Social Pulse</button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="kicker">iOS App Richtung</p>
+          <h1 id="mode-title">MyHumanOS als weiche mobile Begleiter-App</h1>
+          <p id="mode-summary">Stella-inspiriert im Sinne von mobilem Wellness-Flow: klare Tageskarte, eigenes Chart, AI-Frage und persönlicher Rhythmus. Eigenes UI, weniger kopiert, stärker MyHumanOS.</p>
+          <div class="app-actions">
+            <a href="#screens">Screens ansehen</a>
+            <a href="/design-options.html">Website-Designs</a>
+          </div>
+        </div>
+
+        <figure class="hero-art">
+          <img src="/assets/app-designs-showcase.png" alt="">
+          <figcaption>Originales MyHumanOS App-Mockup, nicht Stella UI.</figcaption>
+        </figure>
+      </section>
+
+      <section class="phone-board" id="screens" aria-label="App Screens">
+        <article class="phone home-phone">
+          <div class="phone-shell">
+            <div class="status-bar"><span>9:41</span><b></b><i></i></div>
+            <div class="screen home-screen">
+              <div class="app-header">
+                <span>Heute</span>
+                <button type="button" aria-label="Profil"></button>
+              </div>
+              <section class="daily-card">
+                <p>Daily Design</p>
+                <h2>Warte auf dein klares Ja.</h2>
+                <div class="orbital-widget">
+                  <i></i><i></i><i></i>
+                </div>
+              </section>
+              <section class="quick-grid">
+                <button type="button"><span></span><b>Chart</b></button>
+                <button type="button"><span></span><b>AI Guide</b></button>
+                <button type="button"><span></span><b>Match</b></button>
+                <button type="button"><span></span><b>Journal</b></button>
+              </section>
+              <section class="insight-list">
+                <article><span></span><p>Autorität prüfen</p><b></b></article>
+                <article><span></span><p>Tor 34 beobachten</p><b></b></article>
+              </section>
+              <nav class="tabbar"><b></b><b></b><b></b><b></b></nav>
+            </div>
+          </div>
+          <h3>Home</h3>
+          <p>Die App startet nicht mit Marketing, sondern mit einer echten Tagesflaeche.</p>
+        </article>
+
+        <article class="phone chart-phone">
+          <div class="phone-shell">
+            <div class="status-bar"><span>9:41</span><b></b><i></i></div>
+            <div class="screen chart-screen">
+              <div class="app-header">
+                <span>Bodygraph</span>
+                <button type="button" aria-label="Teilen"></button>
+              </div>
+              <div class="mobile-bodygraph">
+                <i class="c-head"></i><i class="c-ajna"></i><i class="c-throat"></i><i class="c-g"></i>
+                <i class="c-ego"></i><i class="c-spleen"></i><i class="c-solar"></i><i class="c-sacral"></i><i class="c-root"></i>
+              </div>
+              <div class="chart-meta">
+                <article><span>Typ</span><strong>Generator</strong></article>
+                <article><span>Profil</span><strong>2/4</strong></article>
+                <article><span>Autorität</span><strong>Sakral</strong></article>
+              </div>
+              <nav class="tabbar"><b></b><b></b><b></b><b></b></nav>
+            </div>
+          </div>
+          <h3>Bodygraph</h3>
+          <p>Der Chart bekommt einen eigenen App-Screen mit swipebaren Kernwerten.</p>
+        </article>
+
+        <article class="phone guide-phone">
+          <div class="phone-shell">
+            <div class="status-bar"><span>9:41</span><b></b><i></i></div>
+            <div class="screen guide-screen">
+              <div class="app-header">
+                <span>AI Guide</span>
+                <button type="button" aria-label="Neuer Chat"></button>
+              </div>
+              <div class="guide-oracle">
+                <span></span>
+                <h2>Frag dein Design.</h2>
+                <p>Entscheidung, Beziehung, Arbeit oder Timing.</p>
+              </div>
+              <div class="chat-stack">
+                <article>Was bedeutet meine sakrale Autorität heute?</article>
+                <article>Warte auf Antwort im Körper, nicht auf Druck im Kopf.</article>
+              </div>
+              <div class="prompt-bar"><span>Frage eingeben</span><b></b></div>
+              <nav class="tabbar"><b></b><b></b><b></b><b></b></nav>
+            </div>
+          </div>
+          <h3>Guide</h3>
+          <p>Der AI-Part wird wie ein persönlicher Coach ins Produkt eingebettet.</p>
+        </article>
+      </section>
+
+      <section class="mode-detail">
+        <div>
+          <p class="kicker">Aktive Richtung</p>
+          <h2 id="mode-detail-title">Soft OS</h2>
+        </div>
+        <div class="detail-grid">
+          <article>
+            <span>Look</span>
+            <strong id="mode-look">iOS, hell, weich</strong>
+          </article>
+          <article>
+            <span>Fokus</span>
+            <strong id="mode-focus">Daily Insight + Chart</strong>
+          </article>
+          <article>
+            <span>Risiko</span>
+            <strong id="mode-risk">Kann zu Wellness-generisch wirken</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="feature-map" aria-label="App Module">
+        <article>
+          <span>01</span>
+          <h3>Onboarding</h3>
+          <p>Geburtsdaten, Datenschutz, Chart-Erstellung, dann sofort ein persönlicher First Read.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Daily</h3>
+          <p>Tagesimpuls aus Chart, Transiten, Autorität und einem kleinen Journal-Prompt.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Bodygraph</h3>
+          <p>Mobile Bodygraph-Ansicht mit Zentren, Gates, Kanälen und erklärenden Bottom Sheets.</p>
+        </article>
+        <article>
+          <span>04</span>
+          <h3>AI Guide</h3>
+          <p>Fragen ans eigene Design, aber mit klaren Grenzen: Reflexion statt absolute Beratung.</p>
+        </article>
+        <article>
+          <span>05</span>
+          <h3>Compatibility</h3>
+          <p>Vergleich zweier Charts für Beziehung, Team, Freundschaft und Kommunikation.</p>
+        </article>
+        <article>
+          <span>06</span>
+          <h3>Community</h3>
+          <p>Optionale Public Charts, aber privacy-first und ohne Geburtsdaten in der Ansicht.</p>
+        </article>
+      </section>
+    </main>
+
+    <script src="/app-designs.js" defer></script>
+  </body>
+</html>
