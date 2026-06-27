@@ -18,3 +18,5 @@ pdf-extracts/
 *.pdf
 *.msi
 script.remote.js
+CODEX_HANDOFF.md
+PROMPT_FOR_NEXT_CODEX.md
