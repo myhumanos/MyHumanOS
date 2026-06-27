@@ -57,9 +57,12 @@
                 <option value="America/Los_Angeles">US Westküste (Los Angeles)</option>
               </select>
             </label>
-            <label class="wide">
+            <label class="wide place-field">
               <span>Geburtsort</span>
-              <input id="birth-place" name="birthPlace" type="text" autocomplete="address-level2" placeholder="z. B. Berlin, DE oder 52.5200, 13.4050" required>
+              <input id="birth-place" name="birthPlace" type="text" autocomplete="off" placeholder="z. B. Berlin, DE oder 52.5200, 13.4050" aria-autocomplete="list" aria-controls="birth-place-suggestions" aria-expanded="false" required>
+              <input id="latitude" name="latitude" type="hidden">
+              <input id="longitude" name="longitude" type="hidden">
+              <div class="place-suggestions" id="birth-place-suggestions" role="listbox" hidden></div>
             </label>
             <label class="wide checkbox-line">
               <input name="includeTransits" type="checkbox" value="true" checked>

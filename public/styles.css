@@ -468,6 +468,49 @@ label {
   grid-column: 1 / -1;
 }
 
+.place-field {
+  position: relative;
+}
+
+.place-suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  overflow: hidden;
+  border: 1px solid rgba(232, 213, 255, 0.24);
+  border-radius: 10px;
+  background: #160d20;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.42);
+}
+
+.place-suggestions[hidden] {
+  display: none;
+}
+
+.place-suggestions button {
+  display: block;
+  width: 100%;
+  padding: 11px 14px;
+  border: 0;
+  border-bottom: 1px solid rgba(232, 213, 255, 0.12);
+  color: var(--ink);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.place-suggestions button:last-child {
+  border-bottom: 0;
+}
+
+.place-suggestions button:hover,
+.place-suggestions button:focus-visible {
+  background: rgba(143, 92, 255, 0.2);
+  outline: none;
+}
+
 input,
 select {
   width: 100%;

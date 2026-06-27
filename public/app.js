@@ -13,10 +13,17 @@ const accountDialog = document.querySelector("#account-dialog");
 const accountDialogClose = document.querySelector("#account-dialog-close");
 const accountForm = document.querySelector("#account-form");
 const accountStatus = document.querySelector("#account-status");
+const birthPlaceInput = document.querySelector("#birth-place");
+const birthPlaceSuggestions = document.querySelector("#birth-place-suggestions");
+const latitudeInput = document.querySelector("#latitude");
+const longitudeInput = document.querySelector("#longitude");
+const timezoneSelect = document.querySelector("#timezone");
 const context = canvas.getContext("2d");
 let publicChartEntries = [];
 let latestChartArchive = null;
 let currentUser = null;
+let placeSearchTimer = null;
+let placeSearchController = null;
 
 const colors = {
   ink: "#f7f1ff",
@@ -97,9 +104,11 @@ drawChart(defaultChart);
 renderChartSummaryRail(defaultChart);
 loadPublicCharts();
 loadAccount();
+initializePlaceAutocomplete();
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  hidePlaceSuggestions();
 
   const submitButton = form.querySelector("button");
   const payload = Object.fromEntries(new FormData(form).entries());
@@ -125,6 +134,116 @@ form.addEventListener("submit", async (event) => {
     submitButton.querySelector("span").textContent = "Chart berechnen";
   }
 });
+
+function initializePlaceAutocomplete() {
+  if (!birthPlaceInput || !birthPlaceSuggestions) return;
+
+  birthPlaceInput.addEventListener("input", () => {
+    clearSelectedPlace();
+    clearTimeout(placeSearchTimer);
+    placeSearchController?.abort();
+
+    const query = birthPlaceInput.value.trim();
+    if (query.length < 2) {
+      hidePlaceSuggestions();
+      return;
+    }
+
+    placeSearchTimer = setTimeout(() => loadPlaceSuggestions(query), 300);
+  });
+
+  birthPlaceInput.addEventListener("blur", () => {
+    setTimeout(hidePlaceSuggestions, 120);
+  });
+
+  birthPlaceSuggestions.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-place-index]");
+    if (!option) return;
+
+    const result = JSON.parse(option.dataset.place);
+    selectPlace(result);
+  });
+}
+
+async function loadPlaceSuggestions(query) {
+  placeSearchController = new AbortController();
+
+  try {
+    const response = await fetch(`/api/geo?q=${encodeURIComponent(query)}`, {
+      headers: { Accept: "application/json" },
+      signal: placeSearchController.signal
+    });
+    const data = await response.json();
+
+    if (!response.ok || !data.ok || birthPlaceInput.value.trim() !== query) {
+      hidePlaceSuggestions();
+      return;
+    }
+
+    renderPlaceSuggestions(data.results || []);
+  } catch (error) {
+    if (error.name !== "AbortError") hidePlaceSuggestions();
+  }
+}
+
+function renderPlaceSuggestions(results) {
+  const places = results.filter((result) =>
+    Number.isFinite(Number(result.latitude)) && Number.isFinite(Number(result.longitude))
+  ).slice(0, 8);
+
+  if (!places.length) {
+    hidePlaceSuggestions();
+    return;
+  }
+
+  birthPlaceSuggestions.innerHTML = places.map((place, index) => {
+    const label = formatPlaceLabel(place);
+    return `<button type="button" role="option" data-place-index="${index}" data-place="${escapeHtml(JSON.stringify(place))}">${escapeHtml(label)}</button>`;
+  }).join("");
+  birthPlaceSuggestions.hidden = false;
+  birthPlaceInput.setAttribute("aria-expanded", "true");
+}
+
+function selectPlace(place) {
+  birthPlaceInput.value = formatPlaceLabel(place);
+  latitudeInput.value = String(place.latitude);
+  longitudeInput.value = String(place.longitude);
+
+  if (place.timezone) {
+    let option = Array.from(timezoneSelect.options).find((item) => item.value === place.timezone);
+    if (!option) {
+      option = new Option(place.timezone, place.timezone);
+      option.dataset.geoOption = "true";
+      timezoneSelect.add(option);
+    }
+    timezoneSelect.value = place.timezone;
+    timezoneSelect.dataset.geoSelected = "true";
+  }
+
+  hidePlaceSuggestions();
+}
+
+function clearSelectedPlace() {
+  latitudeInput.value = "";
+  longitudeInput.value = "";
+
+  if (timezoneSelect.dataset.geoSelected === "true") {
+    timezoneSelect.querySelector('[data-geo-option="true"]')?.remove();
+    timezoneSelect.value = "auto";
+    delete timezoneSelect.dataset.geoSelected;
+  }
+}
+
+function hidePlaceSuggestions() {
+  if (!birthPlaceSuggestions) return;
+  birthPlaceSuggestions.hidden = true;
+  birthPlaceSuggestions.innerHTML = "";
+  birthPlaceInput?.setAttribute("aria-expanded", "false");
+}
+
+function formatPlaceLabel(place) {
+  return [place.name, place.admin1, place.country_code].filter(Boolean).join(", ");
+}
 
 accountButton?.addEventListener("click", () => {
   accountDialog?.showModal();
