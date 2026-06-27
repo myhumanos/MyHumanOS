@@ -96,9 +96,10 @@
                 <option value="America/Los_Angeles">US Westkueste (Los Angeles)</option>
               </select>
             </label>
-            <label class="wide">
+            <label class="wide geo-field">
               <span>Geburtsort</span>
               <input id="birth-place" name="birthPlace" type="text" autocomplete="address-level2" placeholder="z. B. Berlin, DE oder 52.5200, 13.4050" required>
+              <div class="geo-suggestions" id="geo-suggestions" role="listbox" aria-label="Ortsvorschlaege"></div>
             </label>
             <button class="primary-action" type="submit">
               <span>Chart berechnen</span>
@@ -114,6 +115,7 @@
               <strong id="provider-label">Live API bereit</strong>
             </div>
             <canvas id="chart-canvas" width="900" height="900" aria-label="Human-Design-Bodygraph-Vorschau"></canvas>
+            <div id="svg-bodygraph" class="svg-bodygraph" aria-label="Human-Design-Bodygraph"></div>
           </div>
 
           <div class="reading-panel" id="reading-panel">
