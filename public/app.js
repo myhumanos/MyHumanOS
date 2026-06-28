@@ -18,6 +18,8 @@ const birthPlaceSuggestions = document.querySelector("#birth-place-suggestions")
 const latitudeInput = document.querySelector("#latitude");
 const longitudeInput = document.querySelector("#longitude");
 const timezoneSelect = document.querySelector("#timezone");
+const pageTitle = document.querySelector("#page-title");
+const pageSubtitle = document.querySelector("#page-subtitle");
 const resultGreeting = document.querySelector("#result-greeting");
 const cacheBadge = document.querySelector("#cache-badge");
 const chartSummaryCopy = document.querySelector("#chart-summary-copy");
@@ -466,6 +468,8 @@ function updateResultShell(chart, payload) {
   const firstName = String(payload.name || chart.name || "du").trim().split(/\s+/)[0];
   const cached = chart.cached === true;
 
+  pageTitle.innerHTML = "Dein Chart ist <span>bereit.</span>";
+  pageSubtitle.textContent = "Dein persönlicher Human Design Blueprint wurde berechnet.";
   resultGreeting.innerHTML = `Hallo <span>${escapeHtml(firstName)}</span>`;
   cacheBadge.textContent = "cached ✓";
   cacheBadge.hidden = !cached;
@@ -1805,10 +1809,11 @@ function drawChart(chart) {
   const activeGateMap = createActiveGateMap(gates);
 
   context.clearRect(0, 0, canvas.width, canvas.height);
-  const background = context.createRadialGradient(450, 390, 40, 450, 450, 500);
-  background.addColorStop(0, "#352056");
-  background.addColorStop(0.52, "#170d24");
-  background.addColorStop(1, "#090510");
+  const background = context.createRadialGradient(450, 365, 30, 450, 450, 540);
+  background.addColorStop(0, "#4a2677");
+  background.addColorStop(0.32, "#28143f");
+  background.addColorStop(0.68, "#10091d");
+  background.addColorStop(1, "#05040b");
   context.fillStyle = background;
   context.fillRect(0, 0, canvas.width, canvas.height);
   drawChartAtmosphere();
@@ -1871,7 +1876,28 @@ function createActiveGateMap(gates) {
 
 function drawChartAtmosphere() {
   context.save();
-  context.strokeStyle = "rgba(232, 213, 255, 0.08)";
+  const halo = context.createRadialGradient(450, 430, 80, 450, 430, 390);
+  halo.addColorStop(0, "rgba(179, 111, 255, 0.16)");
+  halo.addColorStop(0.54, "rgba(91, 58, 183, 0.06)");
+  halo.addColorStop(1, "rgba(20, 10, 38, 0)");
+  context.fillStyle = halo;
+  context.beginPath();
+  context.arc(450, 430, 390, 0, Math.PI * 2);
+  context.fill();
+
+  for (let index = 0; index < 130; index += 1) {
+    const angle = index * 2.399963;
+    const radius = 92 + ((index * 47) % 360);
+    const x = 450 + Math.cos(angle) * radius;
+    const y = 438 + Math.sin(angle) * radius * 0.93;
+    const size = index % 11 === 0 ? 2.2 : index % 4 === 0 ? 1.35 : 0.8;
+    context.beginPath();
+    context.fillStyle = index % 9 === 0 ? "rgba(199, 137, 255, 0.7)" : "rgba(235, 223, 255, 0.42)";
+    context.arc(x, y, size, 0, Math.PI * 2);
+    context.fill();
+  }
+
+  context.strokeStyle = "rgba(216, 187, 255, 0.12)";
   context.lineWidth = 1;
 
   for (let ring = 0; ring < 9; ring += 1) {
@@ -1880,22 +1906,29 @@ function drawChartAtmosphere() {
     context.stroke();
   }
 
+  context.strokeStyle = "rgba(185, 130, 255, 0.16)";
+  context.beginPath();
+  context.ellipse(450, 450, 385, 235, -0.16, 0, Math.PI * 2);
+  context.stroke();
+
   context.restore();
 }
 
 function drawHumanSilhouette() {
   context.save();
   const glow = context.createRadialGradient(450, 320, 20, 450, 430, 260);
-  glow.addColorStop(0, "rgba(201, 167, 255, 0.24)");
+  glow.addColorStop(0, "rgba(211, 181, 255, 0.34)");
   glow.addColorStop(1, "rgba(143, 92, 255, 0)");
   context.fillStyle = glow;
   context.beginPath();
   context.ellipse(450, 440, 166, 294, 0, 0, Math.PI * 2);
   context.fill();
 
-  context.fillStyle = "rgba(232, 213, 255, 0.055)";
-  context.strokeStyle = "rgba(232, 213, 255, 0.12)";
-  context.lineWidth = 2;
+  context.fillStyle = "rgba(232, 213, 255, 0.075)";
+  context.strokeStyle = "rgba(224, 200, 255, 0.22)";
+  context.shadowColor = "rgba(169, 102, 255, 0.24)";
+  context.shadowBlur = 22;
+  context.lineWidth = 2.5;
   context.beginPath();
   context.moveTo(450, 98);
   context.bezierCurveTo(498, 124, 496, 192, 468, 238);
@@ -2039,16 +2072,16 @@ function drawHalfChannel(startX, startY, endX, endY, color) {
 function drawCenters(definedCenters, activeGateMap) {
   centerLayout.forEach((center) => {
     const active = definedCenters.includes(center.name);
-    const fill = active ? centerFillColors[center.name] || colors.violet : "rgba(246, 239, 255, 0.12)";
+    const fill = active ? centerFillColors[center.name] || colors.violet : "rgba(28, 25, 43, 0.9)";
 
     context.save();
     context.beginPath();
     drawCenterShape(center);
     context.fillStyle = fill;
-    context.strokeStyle = active ? "rgba(255, 241, 191, 0.96)" : "rgba(232, 213, 255, 0.32)";
-    context.lineWidth = active ? 3.5 : 2;
-    context.shadowColor = active ? "rgba(223, 184, 109, 0.3)" : "transparent";
-    context.shadowBlur = active ? 18 : 0;
+    context.strokeStyle = active ? "rgba(255, 242, 204, 0.98)" : "rgba(205, 178, 238, 0.46)";
+    context.lineWidth = active ? 4 : 2.4;
+    context.shadowColor = active ? "rgba(203, 137, 255, 0.72)" : "rgba(151, 93, 224, 0.12)";
+    context.shadowBlur = active ? 26 : 8;
     context.fill();
     context.stroke();
     context.restore();
