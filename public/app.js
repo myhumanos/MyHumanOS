@@ -18,12 +18,47 @@ const birthPlaceSuggestions = document.querySelector("#birth-place-suggestions")
 const latitudeInput = document.querySelector("#latitude");
 const longitudeInput = document.querySelector("#longitude");
 const timezoneSelect = document.querySelector("#timezone");
+const resultGreeting = document.querySelector("#result-greeting");
+const cacheBadge = document.querySelector("#cache-badge");
+const chartSummaryCopy = document.querySelector("#chart-summary-copy");
+const identityName = document.querySelector("#identity-name");
+const identityType = document.querySelector("#identity-type");
+const identityProfile = document.querySelector("#identity-profile");
+const identityDate = document.querySelector("#identity-date");
+const identityTime = document.querySelector("#identity-time");
+const identityPlace = document.querySelector("#identity-place");
+const identitySummary = document.querySelector("#identity-summary");
+const identitySignature = document.querySelector("#identity-signature");
+const identityNotSelf = document.querySelector("#identity-not-self");
+const definedCount = document.querySelector("#defined-count");
+const gateCount = document.querySelector("#gate-count");
+const channelCount = document.querySelector("#channel-count");
+const devTools = document.querySelector("#dev-tools");
+const devFillButton = document.querySelector("#dev-fill-button");
+const devCalculateButton = document.querySelector("#dev-calculate-button");
+const devDemoButton = document.querySelector("#dev-demo-button");
+const devToolsStatus = document.querySelector("#dev-tools-status");
 const context = canvas.getContext("2d");
 let publicChartEntries = [];
 let latestChartArchive = null;
 let currentUser = null;
 let placeSearchTimer = null;
 let placeSearchController = null;
+const devMode = new URLSearchParams(window.location.search).get("dev") === "1";
+const devTestData = Object.freeze({
+  name: "Demo",
+  birthDate: "1990-01-15",
+  birthTime: "12:00",
+  birthPlace: "Krefeld, Germany",
+  timezone: "Europe/Berlin",
+  latitude: "51.3388",
+  longitude: "6.5853",
+  houseSystem: "P",
+  zodiacType: "Tropic",
+  includeTransits: false,
+  public: false,
+  savePublic: false
+});
 
 const colors = {
   ink: "#f7f1ff",
@@ -105,6 +140,7 @@ renderChartSummaryRail(defaultChart);
 loadPublicCharts();
 loadAccount();
 initializePlaceAutocomplete();
+initializeDevTools();
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -113,27 +149,88 @@ form.addEventListener("submit", async (event) => {
   const submitButton = form.querySelector("button");
   const payload = Object.fromEntries(new FormData(form).entries());
 
+  if (devMode) {
+    payload.houseSystem = devTestData.houseSystem;
+    payload.zodiacType = devTestData.zodiacType;
+    payload.includeTransits = form.elements.namedItem("includeTransits")?.checked === true;
+    payload.public = false;
+    payload.savePublic = false;
+  }
+
   submitButton.disabled = true;
   submitButton.querySelector("span").textContent = "Berechne live...";
+  document.body.dataset.appState = "loading";
   panel.innerHTML = loadingTemplate();
+  if (window.matchMedia("(max-width: 760px)").matches) {
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   try {
     const chart = await fetchChart(payload);
+    document.body.dataset.appState = "result";
+    updateResultShell(chart, payload);
     renderReading(chart, payload);
     drawChart(chart);
     renderChartSummaryRail(chart);
     providerLabel.textContent = chart.isMock ? "Fallback Preview" : "Swiss Ephemeris live";
-    if (!chart.isMock) {
+    if (!chart.isMock && !devMode) {
       addPublicChartFromResult(chart, payload);
       await saveProfileToAccount(chart, payload);
     }
   } catch (error) {
+    document.body.dataset.appState = "error";
     panel.innerHTML = `<p class="error">${escapeHtml(error.message)} Keine Chart-Werte wurden gespeichert.</p>`;
   } finally {
     submitButton.disabled = false;
-    submitButton.querySelector("span").textContent = "Chart berechnen";
+    submitButton.querySelector("span").textContent = "Blueprint berechnen";
   }
 });
+
+function initializeDevTools() {
+  if (!devMode || !devTools) return;
+
+  devTools.hidden = false;
+  document.body.classList.add("dev-mode");
+  devFillButton?.addEventListener("click", fillDevTestData);
+  devCalculateButton?.addEventListener("click", () => {
+    if (!window.confirm("Kann API nutzen, wenn nicht im Cache. Fortfahren?")) return;
+    fillDevTestData();
+    devToolsStatus.textContent = "Privater Testlauf startet. Cache-Treffer verbrauchen keine neuen Provider-Credits.";
+    form.requestSubmit(form.querySelector(".primary-action"));
+  });
+  devDemoButton?.addEventListener("click", renderDevDemo);
+}
+
+function fillDevTestData() {
+  form.elements.namedItem("name").value = devTestData.name;
+  form.elements.namedItem("birthDate").value = devTestData.birthDate;
+  form.elements.namedItem("birthTime").value = devTestData.birthTime;
+  birthPlaceInput.value = devTestData.birthPlace;
+  latitudeInput.value = devTestData.latitude;
+  longitudeInput.value = devTestData.longitude;
+  timezoneSelect.value = devTestData.timezone;
+  form.elements.namedItem("includeTransits").checked = devTestData.includeTransits;
+  hidePlaceSuggestions();
+  devToolsStatus.textContent = "Testdaten eingefüllt. Es wurde keine API aufgerufen und nichts gespeichert.";
+}
+
+function renderDevDemo() {
+  fillDevTestData();
+  const chart = createFallbackChart(devTestData);
+  chart.provider = "Lokale UI-Demo";
+  chart.summary = "Lokale Demo für Layout und Reading. Keine astrologische Berechnung und kein API-Aufruf.";
+  chart.isMock = true;
+
+  document.body.dataset.appState = "result";
+  updateResultShell(chart, devTestData);
+  renderReading(chart, devTestData);
+  drawChart(chart);
+  renderChartSummaryRail(chart);
+  providerLabel.textContent = "UI-Demo · 0 API Credits";
+  cacheBadge.hidden = false;
+  cacheBadge.textContent = "UI-Demo";
+  devToolsStatus.textContent = "UI-Demo aktiv: 0 API-Calls, 0 Provider-Credits, keine Speicherung.";
+}
 
 function initializePlaceAutocomplete() {
   if (!birthPlaceInput || !birthPlaceSuggestions) return;
@@ -269,24 +366,24 @@ function renderChartSummaryRail(chart) {
   if (chart.isPlaceholder) {
     chartSummaryRail.innerHTML = `
     <article>
-      <span>Status</span>
-      <strong>Bereit</strong>
-      <p>Gib deine Daten ein.</p>
+      <span>Typ</span>
+      <strong>–</strong>
+      <p>Nach Berechnung</p>
     </article>
     <article>
       <span>Profil</span>
-      <strong>--/--</strong>
-      <p>Wird live berechnet.</p>
+      <strong>–/–</strong>
+      <p>Deine Rolle</p>
     </article>
     <article>
       <span>Autorität</span>
-      <strong>offen</strong>
-      <p>Nach Chart-Ergebnis.</p>
+      <strong>–</strong>
+      <p>Innere Klarheit</p>
     </article>
     <article>
-      <span>Definition</span>
-      <strong>wartet</strong>
-      <p>Zentren und Kanäle.</p>
+      <span>Strategie</span>
+      <strong>–</strong>
+      <p>Dein Weg</p>
     </article>
   `;
     return;
@@ -295,35 +392,64 @@ function renderChartSummaryRail(chart) {
   const hd = chart.humanDesign || {};
   const definedCenters = hd.definedCenters || chart.centers || [];
   const channels = Array.isArray(hd.channels) ? hd.channels : [];
-  const definition = channels.length
-    ? `${channels.length} Kanal${channels.length === 1 ? "" : "e"}`
-    : definedCenters.length
-      ? `${definedCenters.length} Zentren`
-      : "Offen";
   const profileText = profileDescriptionForPublic(chart.profile || "").split(":")[0] || "Profil";
 
   chartSummaryRail.innerHTML = `
     <article>
       <span>Typ</span>
-      <strong>${escapeHtml(chart.type || "Human Design")}</strong>
-      <p>${escapeHtml(chart.strategy || "Strategie offen")}</p>
+      <strong>${escapeHtml(displayValue(chart.type))}</strong>
+      <p>Deine Energie</p>
     </article>
     <article>
       <span>Profil</span>
-      <strong>${escapeHtml(chart.profile || "n/a")}</strong>
+      <strong>${escapeHtml(displayValue(chart.profile))}</strong>
       <p>${escapeHtml(profileText)}</p>
     </article>
     <article>
       <span>Autorität</span>
-      <strong>${escapeHtml(chart.authority || "offen")}</strong>
+      <strong>${escapeHtml(displayValue(chart.authority))}</strong>
       <p>${escapeHtml(authorityPracticeForPublic(chart.authority || "").split(".")[0])}</p>
     </article>
     <article>
-      <span>Definition</span>
-      <strong>${escapeHtml(definition)}</strong>
-      <p>${escapeHtml(chart.signature ? `${chart.signature} / ${chart.notSelf || "Nicht-Selbst"}` : "Bodygraph Preview")}</p>
+      <span>Strategie</span>
+      <strong>${escapeHtml(displayValue(chart.strategy))}</strong>
+      <p>Dein Weg</p>
     </article>
   `;
+}
+
+function updateResultShell(chart, payload) {
+  const hd = chart.humanDesign || {};
+  const centers = Array.isArray(hd.definedCenters) ? hd.definedCenters : Array.isArray(chart.centers) ? chart.centers : [];
+  const gates = Array.isArray(hd.gates) ? hd.gates : Array.isArray(chart.gates) ? chart.gates : [];
+  const channels = Array.isArray(hd.channels) ? hd.channels : [];
+  const firstName = String(payload.name || chart.name || "du").trim().split(/\s+/)[0];
+  const cached = chart.cached === true;
+
+  resultGreeting.innerHTML = `Hallo <span>${escapeHtml(firstName)}</span>`;
+  cacheBadge.textContent = "cached ✓";
+  cacheBadge.hidden = !cached;
+  identityName.textContent = firstName;
+  identityType.textContent = displayValue(chart.type);
+  identityProfile.textContent = chart.profile ? `Profil ${chart.profile}` : "Profil offen";
+  identityDate.textContent = displayValue(payload.birthDate);
+  identityTime.textContent = displayValue(payload.birthTime);
+  identityPlace.textContent = displayValue(payload.birthPlace || chart.location?.city);
+  const summary = createPersonalSummary(chart, firstName);
+  chartSummaryCopy.textContent = summary;
+  identitySummary.textContent = createDecisionSummary(chart);
+  identitySignature.textContent = displayValue(chart.signature);
+  identityNotSelf.textContent = displayValue(chart.notSelf);
+  definedCount.textContent = String(centers.length);
+  gateCount.textContent = String(gates.length);
+  channelCount.textContent = String(channels.length);
+}
+
+function displayValue(value) {
+  if (value === null || value === undefined || value === "" || value === "null" || value === "undefined") {
+    return "Noch nicht verfügbar";
+  }
+  return String(value);
 }
 
 publicChartList.addEventListener("click", (event) => {
@@ -841,144 +967,138 @@ function renderReading(chart, payload) {
   const channels = Array.isArray(hd.channels) ? hd.channels : [];
   const notes = Array.isArray(hd.calculationNotes) ? hd.calculationNotes : [];
   const profileLines = hd.profileLines || {};
-  const profileSource = profileLines.source || {};
-  const incarnationCross = hd.incarnationCross || {};
-  const transits = chart.transits || {};
-  const location = chart.location || {};
-  const coordinates = Number.isFinite(location.latitude) && Number.isFinite(location.longitude)
-    ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`
-    : "wird vom API-Provider bestimmt";
-  const time = chart.time || {};
-  const utcTime = time.utcTime ? formatUtcTime(time.utcTime) : "wird vom API-Provider bestimmt";
-  const locationSource = locationSourceLabel(location.source, time.timezoneSource);
+  const typeGuide = typeGuideFor(chart.type);
+  const authorityGuide = authorityGuideFor(chart.authority);
+  const profileGuide = profileGuideFor(chart.profile);
+  const firstName = String(payload.name || chart.name || "Du").trim().split(/\s+/)[0];
+  const summary = createPersonalSummary(chart, firstName);
   latestChartArchive = createChartArchive(chart, payload);
 
   panel.innerHTML = `
-    <div class="reading-header">
-      <span class="tiny-label">${chart.isMock ? "Preview" : escapeHtml(chart.provider || "Swiss Ephemeris")}</span>
-      <h2>${escapeHtml(chart.type || "Human Design Preview")}</h2>
-      <p>${escapeHtml(payload.name || "Dein Chart")} - ${escapeHtml(payload.birthPlace)} - ${escapeHtml(payload.birthDate)} - ${escapeHtml(payload.birthTime)}</p>
-    </div>
-
-    <div class="reading-actions">
-      <button class="archive-action" type="button" data-save-chart-json>Chart in Ordner speichern</button>
-      <span>Speichert den vollständigen JSON-Snapshot lokal auf deinem Gerät.</span>
-    </div>
-
-    <div class="core-grid">
-      ${coreCard("Strategie", chart.strategy, "Der Eingang, durch den deine Energie weicher ins Leben tritt.")}
-      ${coreCard("Autorität", chart.authority, "Der Ort, an dem Entscheidung im Körper klarer wird.")}
-      ${coreCard("Profil", chart.profile, "Deine Lernspur zwischen Rolle, Gabe und Begegnung.")}
-      ${coreCard("Selbst", chart.signature, "So fühlt es sich an, wenn du weniger gegen dich arbeitest.")}
-      ${coreCard("Nicht-Selbst", chart.notSelf, "Das Signal, dass du vielleicht fremde Erwartungen trägst.")}
-      ${coreCard("Definition", channels.length ? `${channels.length} Kanal(e)` : "keine kompletten Kanäle", "Komplette Kanäle definieren Zentren, Typ und Autorität.")}
-      ${coreCard("Zeitzone", location.timezone || chart.time?.interpretedAs || "Europe/Berlin", "Geburtszeit wird lokal interpretiert.")}
-      ${coreCard("UTC", utcTime, "Umrechnung für die Ephemeris-Zeit.")}
-      ${coreCard("Koordinaten", coordinates, location.city ? `${location.city}, ${location.countryCode}` : "Geburtsort")}
-      ${coreCard("Ort-Quelle", locationSource, "So wurde der Geburtsort aufgelöst.")}
-      ${coreCard("Status", chart.isMock ? "Fallback" : "Live", chart.isMock ? "Ohne API berechnet." : "Mit Swiss Ephemeris berechnet.")}
-    </div>
-
-    <div class="insight-strip">
-      <div>
-        <span>Heute wichtig</span>
-        <strong>${escapeHtml(transits.today?.transitTheme || dailyFocus(gates))}</strong>
-      </div>
-      <div>
-        <span>Praxis</span>
-        <strong>${escapeHtml(transits.today?.mantra || practiceForType(chart.type))}</strong>
+    <div class="reading-intro">
+      <span class="eyebrow">Dein persönlicher HumanOS Blueprint</span>
+      <h2>${escapeHtml(firstName)}, so bewegt sich deine Energie.</h2>
+      <p>${escapeHtml(summary)}</p>
+      <div class="reading-signals">
+        ${readingSignal("Typ", chart.type)}
+        ${readingSignal("Profil", chart.profile ? `Profil ${chart.profile}` : "")}
+        ${readingSignal("Autorität", chart.authority)}
+        ${readingSignal("Strategie", chart.strategy)}
+        ${chart.signature ? readingSignal("Signatur", chart.signature) : ""}
+        ${chart.notSelf ? readingSignal("Nicht-Selbst", chart.notSelf) : ""}
       </div>
     </div>
 
-    ${todayTransitSection(transits, chart, openCenters)}
-
-    ${readingCompassSection(chart, hd, definedCenters, openCenters)}
-
-    <section class="reading-section">
+    <section class="reading-story" aria-labelledby="reading-story-title">
       <div class="section-heading">
-        <span class="tiny-label">Profil & Kreuz</span>
-        <h3>Die Hauptachsen deines Charts</h3>
+        <span class="eyebrow">Dein Reading</span>
+        <h3 id="reading-story-title">Was dein Design für deinen Alltag bedeutet</h3>
       </div>
-      <div class="detail-grid">
-        ${detailCard("Typ", chart.type, hd.typeDescription || "Typ wird aus Zentren und Kanälen abgeleitet.")}
-        ${detailCard("Strategie", chart.strategy, hd.strategyDescription || "Strategie ist dein erster praktischer Einstieg.")}
-        ${detailCard("Autorität", chart.authority, hd.authorityDescription || "Autorität zeigt, wie Entscheidung klarer wird.")}
-        ${detailCard(`Profil ${chart.profile || "n/a"}`, profileLines.description || "Profil wird aus Personality-Sonne und Design-Sonne gelesen.")}
-        ${detailCard("Personality-Linie", profileLines.personality || "n/a", "Bewusste Rolle: die erste Zahl im Profil.")}
-        ${detailCard("Design-Linie", profileLines.design || "n/a", "Unbewusste Prägung: die zweite Zahl im Profil.")}
-        ${detailCard("Profil-Quelle bewusst", formatProfileSource(profileSource.personalitySun), "Personality Sun: erste Profilzahl.")}
-        ${detailCard("Profil-Quelle Design", formatProfileSource(profileSource.designSun), "Design Sun: zweite Profilzahl, 88 Grad Sonnenbogen.")}
-        ${detailCard("Inkarnationskreuz", incarnationCross.title || "noch unvollständig", incarnationCross.description || "Sun/Earth-Achsen werden angezeigt, sobald die Daten vorliegen.")}
-      </div>
-      ${incarnationCross.gates?.length ? `<div class="gate-grid compact-grid">${incarnationCross.gates.map(crossGateCard).join("")}</div>` : ""}
-    </section>
-
-    <section class="reading-section">
-      <div class="section-heading">
-        <span class="tiny-label">Zentren</span>
-        <h3>Definiert und offen</h3>
-      </div>
-      <div class="center-columns">
-        <div><strong>Definiert</strong><ul class="tag-list">${definedCenters.map(tag).join("") || "<li>Keine feste Definition</li>"}</ul></div>
-        <div><strong>Offen</strong><ul class="tag-list open">${openCenters.map(tag).join("") || "<li>Alles definiert</li>"}</ul></div>
+      <div class="reading-card-grid">
+        ${personalReadingCard("Dein Typ im Alltag", typeGuide.title, hd.typeDescription || typeGuide.text, typeGuide.steps[0])}
+        ${personalReadingCard("Dein Profil", profileGuide.title, profileLines.description || profileGuide.text, profileGuide.steps[0])}
+        ${personalReadingCard("Deine Autorität", authorityGuide.title, hd.authorityDescription || authorityGuide.text, authorityGuide.steps[0])}
+        ${personalReadingCard("Entscheidungen & Timing", displayValue(chart.strategy), hd.strategyDescription || createDecisionSummary(chart), authorityGuide.steps[1])}
+        ${personalReadingCard("Dein Potenzial", displayValue(chart.signature), potentialTextFor(chart.type, chart.signature), "Beobachte dieses Gefühl als Rückmeldung, nicht als Leistungsziel.")}
+        ${personalReadingCard("Konditionierung & Nicht-Selbst", displayValue(chart.notSelf), conditioningTextFor(chart.type, chart.notSelf, openCenters), "Du musst das Signal nicht bekämpfen. Wahrnehmen ist der erste Schritt.")}
       </div>
     </section>
 
-    <section class="reading-section">
-      <div class="section-heading">
-        <span class="tiny-label">Kanäle</span>
-        <h3>Komplette Verbindungen</h3>
-      </div>
-      ${channels.length ? `<div class="channel-grid">${channels.map(channelCard).join("")}</div>` : `<p class="summary">Keine vollständigen Kanäle erkannt. In diesem Fall bleiben Zentren offen oder die API-Daten sind unvollständig.</p>`}
-    </section>
-
-    <section class="reading-section">
-      <div class="section-heading">
-        <span class="tiny-label">Bewusst</span>
-        <h3>Personality: schwarze Aktivierungen</h3>
-      </div>
-      <ul class="activation-list">${personalityActivations.length ? personalityActivations.map(activationRow).join("") : gates.slice(0, 14).map(gateActivationFallback).join("")}</ul>
-    </section>
-
-    <section class="reading-section">
-      <div class="section-heading">
-        <span class="tiny-label">Unbewusst</span>
-        <h3>Design: rote Aktivierungen</h3>
-      </div>
-      <ul class="activation-list design-list">${designActivations.length ? designActivations.map(activationRow).join("") : "<li><strong>Design-Daten fehlen</strong><span>Ohne Design-Sonne ist die zweite Profilzahl unvollständig.</span></li>"}</ul>
-    </section>
-
-    <section class="reading-section">
-      <div class="section-heading">
-        <span class="tiny-label">Alle Tore</span>
-        <h3>Gate- und Linienübersicht</h3>
-      </div>
-      <div class="gate-grid">${gates.slice(0, 18).map(gateCard).join("")}</div>
-    </section>
-
-    ${transitDetailsSection(transits)}
-
-    ${points.length ? `
-      <section class="reading-section">
-        <div class="section-heading">
-          <span class="tiny-label">Ephemeris</span>
-          <h3>Planetenpositionen</h3>
+    <details class="advanced-reading">
+      <summary>
+        <span><b>Tiefer eintauchen</b><small>Centers, Channels, Gates, Aktivierungen und Planeten</small></span>
+        <i aria-hidden="true">+</i>
+      </summary>
+      <div class="advanced-reading-body">
+        ${advancedGroup("Centers", `${definedCenters.length} definiert · ${openCenters.length} offen`, `
+          <div class="center-columns">
+            <div><strong>Definiert</strong><ul class="tag-list">${definedCenters.map(tag).join("") || "<li>Keine feste Definition</li>"}</ul></div>
+            <div><strong>Offen</strong><ul class="tag-list open">${openCenters.map(tag).join("") || "<li>Keine offenen Center</li>"}</ul></div>
+          </div>`)}
+        ${advancedGroup("Channels", `${channels.length} vollständige Verbindung${channels.length === 1 ? "" : "en"}`, channels.length
+          ? `<div class="channel-grid">${channels.map(channelCard).join("")}</div>`
+          : '<p class="summary">Noch keine vollständigen Channels verfügbar.</p>')}
+        ${advancedGroup("Gates", `${gates.length} aktive Themen`, gates.length
+          ? `<div class="gate-grid">${gates.slice(0, 24).map(gateCard).join("")}</div>`
+          : '<p class="summary">Noch keine Gate-Daten verfügbar.</p>')}
+        ${advancedGroup("Aktivierungen", "Bewusste und unbewusste Ebene", `
+          <div class="activation-columns">
+            <div><h4>Personality · schwarz</h4><ul class="activation-list">${personalityActivations.length ? personalityActivations.map(activationRow).join("") : gates.slice(0, 14).map(gateActivationFallback).join("") || "<li>Noch nicht verfügbar</li>"}</ul></div>
+            <div><h4>Design · rot</h4><ul class="activation-list design-list">${designActivations.length ? designActivations.map(activationRow).join("") : "<li>Noch nicht verfügbar</li>"}</ul></div>
+          </div>`)}
+        ${points.length ? advancedGroup("Planeten", "Ephemeris-Positionen", `<ul class="point-list">${points.map(pointRow).join("")}</ul>`) : ""}
+        ${notes.length ? advancedGroup("Berechnung", "Technische Hinweise", `<ul class="note-list">${notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ul>`) : ""}
+        <div class="reading-actions">
+          <button class="archive-action" type="button" data-save-chart-json>Chart-Daten lokal speichern</button>
+          <span>Speichert den vollständigen JSON-Snapshot nur auf deinem Gerät.</span>
         </div>
-        <ul class="point-list">${points.map(pointRow).join("")}</ul>
-      </section>
-    ` : ""}
+      </div>
+    </details>
+  `;
+}
 
-    ${notes.length ? `
-      <section class="reading-section">
-        <div class="section-heading">
-          <span class="tiny-label">Berechnung</span>
-          <h3>Was dieses Chart verwendet</h3>
-        </div>
-        <ul class="note-list">${notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ul>
-      </section>
-    ` : ""}
+function createPersonalSummary(chart, name = "Du") {
+  const type = displayValue(chart.type);
+  const profile = chart.profile ? `Profil ${chart.profile}` : "einem noch offenen Profil";
+  const strategy = displayValue(chart.strategy);
+  const authority = displayValue(chart.authority);
 
-    <p class="summary">${escapeHtml(chart.summary || "")}</p>
+  return `${name}, dein Design trägt die Energie ${type} mit ${profile}. Deine Strategie ${strategy} beschreibt, wie du stimmiger mit dem Leben in Kontakt gehst. Deine Autorität ${authority} zeigt dir, wie klare Entscheidungen in deinem eigenen Tempo entstehen.`;
+}
+
+function createDecisionSummary(chart) {
+  const strategy = chart.strategy || "deine Strategie";
+  const authority = chart.authority || "deine innere Autorität";
+  return `${strategy} öffnet den Weg. ${authority} hilft dir zu erkennen, wann eine Entscheidung wirklich deine ist.`;
+}
+
+function readingSignal(label, value) {
+  return `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(displayValue(value))}</strong></div>`;
+}
+
+function personalReadingCard(label, title, text, practice) {
+  return `
+    <article class="personal-reading-card">
+      <span>${escapeHtml(label)}</span>
+      <h4>${escapeHtml(displayValue(title))}</h4>
+      <p>${escapeHtml(displayValue(text))}</p>
+      ${practice ? `<small>${escapeHtml(practice)}</small>` : ""}
+    </article>
+  `;
+}
+
+function potentialTextFor(type, signature) {
+  const texts = {
+    Generator: "Deine Kraft wächst dort, wo echte Resonanz zu ausdauernder Energie wird.",
+    "Manifestierender Generator": "Dein Potenzial liegt in lebendiger Vielseitigkeit, Tempo und der Freiheit, deinen Kurs zu korrigieren.",
+    Projektor: "Deine Gabe liegt im präzisen Sehen, im Lenken von Energie und in Führung zum richtigen Zeitpunkt.",
+    Manifestor: "Dein Potenzial zeigt sich, wenn ein authentischer Impuls etwas Neues in Bewegung bringt.",
+    Reflektor: "Deine Sensibilität macht sichtbar, was in Menschen, Gruppen und Umgebungen wirklich lebendig ist."
+  };
+  const base = texts[type] || "Dein Potenzial wird sichtbar, wenn du weniger gegen deine natürliche Mechanik arbeitest.";
+  return signature ? `${base} ${signature} kann dabei dein inneres Rückmeldesignal sein.` : base;
+}
+
+function conditioningTextFor(type, notSelf, openCenters) {
+  const texts = {
+    Generator: "Achte auf Momente, in denen du aus Druck weitermachst, obwohl dein Körper längst kein echtes Ja mehr hat.",
+    "Manifestierender Generator": "Ungeduld und hektisches Überspringen können entstehen, wenn dein Tempo nicht mehr aus echter Resonanz kommt.",
+    Projektor: "Dauerleistung und der Wunsch, ungefragt erkannt zu werden, können dich von deiner natürlichen Klarheit entfernen.",
+    Manifestor: "Widerstand wird oft lauter, wenn du deinen Impuls zurückhältst oder andere ohne Orientierung zurücklässt.",
+    Reflektor: "Du kannst Stimmungen und Erwartungen deines Umfelds so stark aufnehmen, dass sie sich zeitweise wie deine eigenen anfühlen."
+  };
+  const base = texts[type] || "Konditionierung zeigt sich dort, wo fremder Druck lauter wird als deine eigene Wahrnehmung.";
+  const centerHint = openCenters.length ? ` Deine offenen Center laden dazu ein, diesen Einfluss neugierig statt wertend zu beobachten.` : "";
+  const signal = notSelf ? ` Das Signal ${notSelf} kann dich früh darauf aufmerksam machen.` : "";
+  return `${base}${signal}${centerHint}`;
+}
+
+function advancedGroup(title, description, content) {
+  return `
+    <details class="advanced-group">
+      <summary><span><b>${escapeHtml(title)}</b><small>${escapeHtml(description)}</small></span><i aria-hidden="true">+</i></summary>
+      <div class="advanced-group-content">${content}</div>
+    </details>
   `;
 }
 
@@ -1467,10 +1587,23 @@ function tag(value) {
 
 function loadingTemplate() {
   return `
-    <div class="empty-state">
-      <span class="tiny-label">Swiss Ephemeris</span>
-      <h2>Dein Chart wird berechnet.</h2>
-      <p>MyHumanOS ruft die geschützte Worker-API auf und übersetzt die Positionen in Human-Design-Gates.</p>
+    <div class="scan-state" role="status" aria-live="polite">
+      <div class="scan-content">
+        <span class="eyebrow">HumanOS Scan</span>
+        <h2>Dein HumanOS wird berechnet</h2>
+        <p>Wir verbinden Zeit, Ort und Planetenpositionen zu deinem Blueprint.</p>
+        <div class="scan-visual" aria-hidden="true">
+          <span class="scan-ring"></span>
+          <span class="scan-ring two"></span>
+          <span class="scan-ring three"></span>
+          <span class="scan-orb"></span>
+        </div>
+        <div class="scan-steps">
+          <span>Geburtsdaten werden ausgerichtet …</span>
+          <span>Planetenpositionen werden berechnet …</span>
+          <span>Dein Blueprint wird geöffnet …</span>
+        </div>
+      </div>
     </div>
   `;
 }

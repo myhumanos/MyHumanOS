@@ -3,218 +3,246 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="MyHumanOS ist ein astrologisch inspiriertes Human-Design-Sanctuary mit Chart-Rechner, Bodygraph Preview und deutschem Lexikon.">
-    <title>MyHumanOS | Human Design Sanctuary</title>
+    <meta name="theme-color" content="#05070d">
+    <meta name="description" content="MyHumanOS übersetzt deine Geburtsdaten in einen persönlichen Human Design Blueprint.">
+    <title>MyHumanOS | Dein Human Design Blueprint</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css?v=20260623-admin-v1">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css?v=20260627-launch-v1">
   </head>
-  <body class="home-os">
-    <div class="site-glow" aria-hidden="true"></div>
+  <body class="home-os" data-app-state="ready">
+    <div class="space-atmosphere" aria-hidden="true">
+      <span class="space-orb space-orb-one"></span>
+      <span class="space-orb space-orb-two"></span>
+      <span class="space-grid"></span>
+    </div>
 
-    <div class="os-layout">
-      <aside class="os-left" aria-label="Chart Eingabe">
-        <nav class="topbar compact-topbar" aria-label="Hauptnavigation">
-          <a class="brand-row" href="/">
-            <span class="brand-mark">MH</span>
-            <span>
-              <strong>MyHumanOS</strong>
-              <small>Human Design Sanctuary</small>
-            </span>
-          </a>
-        </nav>
+    <header class="app-header">
+      <a class="brand" href="/" aria-label="MyHumanOS Startseite">
+        <span class="brand-orb" aria-hidden="true"><i></i></span>
+        <span>myhumanos</span>
+      </a>
+      <nav class="app-navigation" aria-label="Hauptnavigation">
+        <a class="active" href="#chart">Human Design</a>
+        <a href="#blueprint-teaser">AI Mentor</a>
+        <a href="/transite.html">Daily Alignment</a>
+        <a href="#frequency-teaser">Steine</a>
+        <a href="/lexikon.html">Ressourcen</a>
+      </nav>
+      <div class="header-actions">
+        <span class="beta-badge">Beta</span>
+        <button class="account-button" type="button" id="account-button">Login</button>
+      </div>
+    </header>
 
-        <section class="hero-workspace os-intake" aria-labelledby="page-title">
-          <div class="section-kicker">
-            <span class="tiny-label">Dein Chart. Dein Kompass.</span>
-            <h1 id="page-title">Berechne dein energetisches Betriebssystem.</h1>
-            <p>Deutsche Zeit ist vorausgewählt. Wenn dein Geburtsort außerhalb Deutschlands liegt, kann MyHumanOS die Zeitzone aus dem Ort ableiten.</p>
+    <main class="app-shell" id="chart">
+      <section class="intake-column" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <span class="eyebrow">Dein energetischer Blueprint</span>
+          <h1 id="page-title">Decode your <span>HumanOS.</span></h1>
+          <p>Berechne deinen individuellen Human Design Blueprint – visuell, klar und persönlich.</p>
+        </div>
+
+        <div class="glass-card form-card">
+          <div class="card-heading">
+            <div>
+              <span class="section-index">01</span>
+              <h2>Dein Blueprint berechnen</h2>
+            </div>
+            <span class="secure-dot" title="Geschützte Verbindung"></span>
           </div>
 
           <form class="chart-form" id="chart-form">
             <label>
-              <span>Vorname</span>
-              <input id="name" name="name" type="text" autocomplete="name" placeholder="Justin">
+              <span>Name</span>
+              <input id="name" name="name" type="text" autocomplete="name" placeholder="Dein Vorname">
             </label>
-            <label>
-              <span>Geburtsdatum</span>
-              <input id="birth-date" name="birthDate" type="date" required>
-            </label>
-            <label>
-              <span>Geburtszeit</span>
-              <input id="birth-time" name="birthTime" type="time" required>
-            </label>
-            <label>
-              <span>Zeitbasis</span>
-              <select id="timezone" name="timezone">
-                <option value="Europe/Berlin" selected>Deutsche Zeit (Europe/Berlin)</option>
-                <option value="auto">Automatisch nach Geburtsort</option>
-                <option value="Europe/Vienna">Österreich (Europe/Vienna)</option>
-                <option value="Europe/Zurich">Schweiz (Europe/Zurich)</option>
-                <option value="Europe/London">UK (Europe/London)</option>
-                <option value="America/New_York">US Ostküste (New York)</option>
-                <option value="America/Los_Angeles">US Westküste (Los Angeles)</option>
-              </select>
-            </label>
-            <label class="wide place-field">
+            <div class="form-row">
+              <label>
+                <span>Geburtsdatum</span>
+                <input id="birth-date" name="birthDate" type="date" required>
+              </label>
+              <label>
+                <span>Geburtszeit</span>
+                <input id="birth-time" name="birthTime" type="time" required>
+              </label>
+            </div>
+            <label class="place-field">
               <span>Geburtsort</span>
-              <input id="birth-place" name="birthPlace" type="text" autocomplete="off" placeholder="z. B. Berlin, DE oder 52.5200, 13.4050" aria-autocomplete="list" aria-controls="birth-place-suggestions" aria-expanded="false" required>
+              <div class="input-with-icon">
+                <input id="birth-place" name="birthPlace" type="text" autocomplete="off" placeholder="z. B. Frankfurt am Main" aria-autocomplete="list" aria-controls="birth-place-suggestions" aria-expanded="false" required>
+                <span aria-hidden="true">⌕</span>
+              </div>
               <input id="latitude" name="latitude" type="hidden">
               <input id="longitude" name="longitude" type="hidden">
               <div class="place-suggestions" id="birth-place-suggestions" role="listbox" hidden></div>
             </label>
-            <label class="wide checkbox-line">
+            <label class="timezone-field">
+              <span>Zeitzone</span>
+              <select id="timezone" name="timezone">
+                <option value="Europe/Berlin" selected>Europe/Berlin</option>
+                <option value="auto">Automatisch nach Geburtsort</option>
+                <option value="Europe/Vienna">Europe/Vienna</option>
+                <option value="Europe/Zurich">Europe/Zurich</option>
+                <option value="Europe/London">Europe/London</option>
+                <option value="America/New_York">America/New_York</option>
+                <option value="America/Los_Angeles">America/Los_Angeles</option>
+              </select>
+            </label>
+            <label class="checkbox-line">
               <input name="includeTransits" type="checkbox" value="true" checked>
-              <span>Tagestransite für heute einbeziehen</span>
+              <span>Tagesimpulse einbeziehen</span>
             </label>
             <button class="primary-action" type="submit">
-              <span>Chart berechnen</span>
+              <span>Blueprint berechnen</span>
+              <b aria-hidden="true">✦</b>
             </button>
-            <p class="form-help">Deine Geburtsdaten bleiben privat und werden nur zur Berechnung verwendet. Öffentlich sichtbar sind nur Vorname und Chart-Ergebnis.</p>
-            <p class="form-help api-fallback-note">Falls die Live-API gerade pausiert, bleiben gespeicherte Profile, Transite, Lexikon und Shop weiter nutzbar.</p>
+            <p class="trustline"><span aria-hidden="true">▢</span> Sicher. Privat. Nur für dich.</p>
+            <aside class="dev-tools" id="dev-tools" hidden aria-label="Entwickler-Testbereich">
+              <div class="dev-tools-heading">
+                <span>Private Testhilfe</span>
+                <b>DEV</b>
+              </div>
+              <div class="dev-tools-actions">
+                <button type="button" id="dev-fill-button">Demo-Daten einfüllen</button>
+                <button type="button" id="dev-calculate-button">Demo berechnen</button>
+                <button type="button" id="dev-demo-button">UI-Demo ohne API</button>
+              </div>
+              <p id="dev-tools-status">Nur die UI-Demo garantiert 0 Credits. Private Testläufe werden nicht gespeichert.</p>
+            </aside>
           </form>
-        </section>
+        </div>
+
+        <div class="privacy-row" aria-label="Datenschutz Vorteile">
+          <span>100% privat</span>
+          <span>Keine Weitergabe</span>
+          <span>Für dich</span>
+        </div>
+      </section>
+
+      <section class="chart-column" aria-labelledby="bodygraph-title">
+        <div class="result-welcome">
+          <div>
+            <span class="eyebrow">Dein Human Design</span>
+            <h2 id="result-greeting">Dein Blueprint wartet.</h2>
+          </div>
+          <span class="status-badge" id="cache-badge" hidden>cached ✓</span>
+        </div>
+
+        <div class="glass-card chart-stage">
+          <div class="stage-toolbar">
+            <div>
+              <span class="section-index">02</span>
+              <strong id="bodygraph-title">Dein BodyGraph</strong>
+            </div>
+            <span id="provider-label">Bereit für deine Berechnung</span>
+          </div>
+          <div class="chart-display">
+            <canvas id="chart-canvas" width="900" height="900" aria-label="Human-Design-BodyGraph"></canvas>
+          </div>
+          <div class="chart-reading-summary">
+            <span class="mini-orb" aria-hidden="true"></span>
+            <div>
+              <span>Dein HumanOS in einem Satz</span>
+              <p id="chart-summary-copy">Dein BodyGraph und deine persönliche Kurzlesung erscheinen nach der Berechnung.</p>
+            </div>
+          </div>
+          <div class="chart-metrics" aria-label="Technische Chart-Zusammenfassung">
+            <span><b id="defined-count">0</b> Center</span>
+            <span><b id="gate-count">0</b> Gates</span>
+            <span><b id="channel-count">0</b> Kanäle</span>
+          </div>
+          <a class="chart-jump" href="#reading-panel">Chart Details anzeigen <span>⌄</span></a>
+        </div>
+
+      </section>
+
+      <aside class="insight-column" aria-label="Chart Übersicht">
+        <div class="glass-card identity-card">
+          <div class="identity-top">
+            <span class="identity-orb" aria-hidden="true"><i></i></span>
+            <div><span>Dein HumanOS</span><h2 id="identity-name">Noch nicht berechnet</h2><p><b id="identity-type">Dein Typ</b> · <b id="identity-profile">Dein Profil</b></p></div>
+          </div>
+          <dl class="birth-facts">
+            <div><dt>Geburtsdatum</dt><dd id="identity-date">–</dd></div>
+            <div><dt>Geburtszeit</dt><dd id="identity-time">–</dd></div>
+            <div><dt>Geburtsort</dt><dd id="identity-place">–</dd></div>
+          </dl>
+        </div>
+
+        <div class="insight-grid" id="chart-summary-rail">
+          <article><span>Typ</span><strong>–</strong><p>Nach Berechnung</p></article>
+          <article><span>Profil</span><strong>–/–</strong><p>Deine Rolle</p></article>
+          <article><span>Autorität</span><strong>–</strong><p>Innere Klarheit</p></article>
+          <article><span>Strategie</span><strong>–</strong><p>Dein Weg</p></article>
+        </div>
+
+        <div class="glass-card energy-card reading-preview-card">
+          <div class="card-heading compact"><div><span class="section-index">03</span><h2>Deine innere Navigation</h2></div></div>
+          <p id="identity-summary">Strategie und Autorität zeigen dir nach der Berechnung, wie dein eigener Entscheidungsweg funktioniert.</p>
+          <div class="signal-pair">
+            <div><span>Potenzial</span><strong id="identity-signature">Noch nicht verfügbar</strong></div>
+            <div><span>Nicht-Selbst</span><strong id="identity-not-self">Noch nicht verfügbar</strong></div>
+          </div>
+        </div>
       </aside>
 
-      <main class="os-main" id="chart">
-        <nav class="os-main-nav" aria-label="MyHumanOS Bereiche">
-          <div class="nav-links">
-            <a class="active" href="/#chart">Chart</a>
-            <a href="/transite.html">Transite</a>
-            <a href="/lexikon.html">Lexikon</a>
-            <a href="/shop.html">Steine Shop</a>
-          </div>
-          <button class="account-button" type="button" id="account-button">Login</button>
-        </nav>
+      <section class="glass-card reading-panel" id="reading-panel" aria-live="polite">
+        <div class="launch-reading">
+          <span class="eyebrow">Dein persönliches Reading</span>
+          <h2>Dein Chart entsteht aus Zeit, Ort und Himmel.</h2>
+          <p>Trage deine Geburtsdaten ein. MyHumanOS übersetzt sie in Typ, Strategie, Autorität, Profil, Zentren, Tore und Tagesimpulse.</p>
+        </div>
+      </section>
 
-        <section class="dashboard os-dashboard" aria-live="polite">
-          <div class="chart-stage os-card">
-            <div class="stage-toolbar">
-              <span>Dein Chart</span>
-              <strong id="provider-label">Bereit für deine Berechnung</strong>
-            </div>
-            <div class="chart-display">
-              <canvas id="chart-canvas" width="900" height="900" aria-label="Human-Design-Bodygraph-Vorschau"></canvas>
-              <div class="planet-orbit-strip" aria-label="Planeten Fokus">
-                <span>Sonne</span>
-                <span>Mond</span>
-                <span>Erde</span>
-                <span>Venus</span>
-              </div>
-              <aside class="chart-summary-rail" id="chart-summary-rail" aria-label="Chart Zusammenfassung">
-                <article>
-                  <span>Status</span>
-                  <strong>Bereit</strong>
-                  <p>Gib deine Daten ein.</p>
-                </article>
-                <article>
-                  <span>Profil</span>
-                  <strong>--/--</strong>
-                  <p>Wird live berechnet.</p>
-                </article>
-                <article>
-                  <span>Autorität</span>
-                  <strong>offen</strong>
-                  <p>Nach Chart-Ergebnis.</p>
-                </article>
-                <article>
-                  <span>Definition</span>
-                  <strong>wartet</strong>
-                  <p>Zentren und Kanäle.</p>
-                </article>
-              </aside>
-            </div>
-          </div>
+      <div class="teaser-grid">
+        <article class="glass-card teaser-card" id="blueprint-teaser">
+          <span class="teaser-icon">✣</span>
+          <div><h3>Profile Datenbank</h3><p>Entdecke bald alle 12 Human Design Profile und ihre einzigartigen Qualitäten.</p></div>
+        </article>
+        <article class="glass-card teaser-card frequency-card" id="frequency-teaser">
+          <div><h3>Passende Frequenzen für dich</h3><p>Bald empfiehlt dir myhumanos passende Kristalle, Rituale und Tagesimpulse.</p></div>
+          <div class="crystal-pills"><span>Amethyst</span><span>Rosenquarz</span><span>Bergkristall</span></div>
+        </article>
+      </div>
 
-          <span class="section-anchor" id="transite"></span>
-          <div class="reading-panel os-card" id="reading-panel">
-            <div class="launch-reading">
-              <span class="tiny-label">Dein persönliches Reading</span>
-              <h2>Dein Chart entsteht aus Zeit, Ort und Himmel.</h2>
-              <p>Trage deine Geburtsdaten ein. MyHumanOS übersetzt die Planetendaten in Typ, Strategie, Autorität, Profil, Zentren, Tore und Tagestransite.</p>
-              <div class="launch-pill-row">
-                <span>Bodygraph</span>
-                <span>Tagestransite</span>
-                <span>Profil</span>
-                <span>Zentren</span>
-              </div>
-              <div class="launch-note">
-                <strong>Privat berechnen, öffentlich nur mit Vorname speichern.</strong>
-                <p>Geburtsdatum, Uhrzeit, Ort und Koordinaten bleiben aus der öffentlichen Liste heraus.</p>
-              </div>
-            </div>
-          </div>
-        </section>
+      <section class="future-strip" aria-label="Kommende Funktionen">
+        <article><span>Profil Datenbank</span><strong>Entdecke bald alle 12 Human Design Profile und ihre Qualitäten.</strong></article>
+        <article><span>Daily Alignment</span><strong>Deine Energie im Rhythmus des Tages – bald in deinem HumanOS.</strong></article>
+      </section>
 
-        <section class="portal-section os-portal" aria-label="Weitere Bereiche">
-          <div class="portal-grid">
-            <a class="portal-card lexicon-card" href="/lexikon.html">
-              <span>Wissen</span>
-              <strong>Lexikon öffnen</strong>
-              <p>Typen, Profile, Autoritäten und Zentren in einem ruhigen Nachschlagewerk.</p>
-            </a>
-            <a class="portal-card shop-card" href="/shop.html">
-              <span>Ritual</span>
-              <strong>Steine Shop</strong>
-              <p>Interne Vorschau für Amethyst, Mondstein, Rauchquarz und Ritual-Bundles.</p>
-            </a>
-          </div>
-        </section>
+      <details class="community-section">
+        <summary>Öffentliche Chart-Impulse entdecken</summary>
+        <div class="public-panel" id="community">
+          <div class="public-heading"><span class="eyebrow">Community</span><h2>Gespeicherte Charts</h2><p>Nur Vorname und Chart-Ergebnis sind sichtbar.</p></div>
+          <div class="public-list" id="public-chart-list"><article class="public-card muted"><span>Lade Charts...</span></article></div>
+          <p class="public-note" id="public-chart-status">Private Geburtsdaten werden hier nicht gezeigt.</p>
+        </div>
+      </details>
+    </main>
 
-        <aside class="public-panel os-card" id="community" aria-labelledby="public-title">
-          <div class="public-heading">
-            <span class="tiny-label">Community</span>
-            <h2 id="public-title">Gespeicherte Charts</h2>
-            <p>Klickbare öffentliche Mini-Readings. Sichtbar sind nur Vorname und Chart-Ergebnis.</p>
-          </div>
-          <div class="public-list" id="public-chart-list">
-            <article class="public-card muted">
-              <span>Lade Charts...</span>
-            </article>
-          </div>
-          <p class="public-note" id="public-chart-status">Geburtsdaten, Uhrzeit, Ort, Koordinaten und API-Rohdaten werden nicht in dieser Liste gezeigt.</p>
-        </aside>
-
-        <section class="source-note os-source" aria-label="Quellen und Inspiration">
-          <p>Human Design ist ein experimentelles Selbstentdeckungs-Tool und kein Ersatz für professionelle Beratung. MyHumanOS formuliert eigene Texte und zeigt Chart-Daten als Reflexionsraum.</p>
-        </section>
-      </main>
-    </div>
+    <footer class="app-footer"><span>100% privat & sicher</span><span>Keine Speicherung ohne dich</span><span>Swiss Ephemeris</span><span>Für dich & nur für dich</span></footer>
 
     <dialog class="chart-dialog" id="public-chart-dialog" aria-labelledby="public-chart-dialog-title">
-      <div class="chart-dialog-shell">
-        <button class="dialog-close" type="button" id="public-chart-dialog-close" aria-label="Schließen"></button>
-        <div id="public-chart-dialog-content"></div>
-      </div>
+      <div class="chart-dialog-shell"><button class="dialog-close" type="button" id="public-chart-dialog-close" aria-label="Schließen"></button><div id="public-chart-dialog-content"></div></div>
     </dialog>
 
     <dialog class="chart-dialog account-dialog" id="account-dialog" aria-labelledby="account-dialog-title">
       <div class="chart-dialog-shell">
         <button class="dialog-close" type="button" id="account-dialog-close" aria-label="Schließen"></button>
         <div class="account-dialog-content">
-          <span class="tiny-label">MyHumanOS Account</span>
-          <h2 id="account-dialog-title">Profil speichern</h2>
-          <p>Mit E-Mail und Passwort bleibt dein Chart privat in deinem MyHumanOS-Profil gespeichert.</p>
+          <span class="eyebrow">MyHumanOS Account</span><h2 id="account-dialog-title">Profil speichern</h2><p>Mit E-Mail und Passwort bleibt dein Chart privat in deinem MyHumanOS-Profil gespeichert.</p>
           <form class="account-form" id="account-form">
-            <label>
-              <span>E-Mail</span>
-              <input name="email" type="email" autocomplete="email" required>
-            </label>
-            <label>
-              <span>Passwort</span>
-              <input name="password" type="password" autocomplete="current-password" minlength="8" required>
-            </label>
-            <div class="account-actions">
-              <button class="primary-action" type="submit" value="login">Einloggen</button>
-              <button class="ghost-action" type="submit" value="register">Registrieren</button>
-            </div>
+            <label><span>E-Mail</span><input name="email" type="email" autocomplete="email" required></label>
+            <label><span>Passwort</span><input name="password" type="password" autocomplete="current-password" minlength="8" required></label>
+            <div class="account-actions"><button class="primary-action" type="submit" value="login">Einloggen</button><button class="ghost-action" type="submit" value="register">Registrieren</button></div>
           </form>
           <div class="account-status" id="account-status">Noch nicht eingeloggt.</div>
         </div>
       </div>
     </dialog>
 
-    <script src="/app.js?v=20260623-admin-v1" defer></script>
+    <script src="/app.js?v=20260627-launch-v1" defer></script>
   </body>
 </html>
