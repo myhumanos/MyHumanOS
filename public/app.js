@@ -60,6 +60,48 @@ const devTestData = Object.freeze({
   savePublic: false
 });
 
+const HUMANOS_CONTENT = Object.freeze({
+  profiles: {
+    "1/3": { name: "Forscher / Experimentierer", gift: "Du baust tragfähiges Wissen auf und prüfst es im echten Leben.", learning: "Versuch und Irrtum sind Daten, keine Niederlage.", seen: "Andere erleben dich als gründlich, ehrlich und praktisch.", needs: "Zeit für Recherche und die Freiheit, selbst zu testen." },
+    "1/4": { name: "Forscher / Opportunist", gift: "Tiefe Vorbereitung verbindet sich mit Wirkung über vertraute Menschen.", learning: "Wissen wird kraftvoll, wenn es in Beziehung lebendig wird.", seen: "Du wirkst verlässlich und öffnest Türen über Vertrauen.", needs: "Ein stabiles Fundament und ein echtes Netzwerk." },
+    "2/4": { name: "Eremit / Opportunist", gift: "Natürliche Talente reifen im Rückzug und werden von deinem Umfeld erkannt.", learning: "Nicht jeder Ruf ist deiner; Resonanz entscheidet.", seen: "Andere sehen oft Fähigkeiten, die für dich selbstverständlich sind.", needs: "Ungestörte Zeit und Menschen, die dich wirklich kennen." },
+    "2/5": { name: "Eremit / Ketzer", gift: "Du verbindest natürliche Begabung mit praktischer Lösungskraft.", learning: "Projektionen anderer sind Einladungen, keine Verpflichtungen.", seen: "Du wirst als stille, überraschend wirksame Hilfe wahrgenommen.", needs: "Rückzug und klare Grenzen gegenüber Erwartungen." },
+    "3/5": { name: "Experimentierer / Ketzer", gift: "Erfahrung wird bei dir zu Lösungen, die auch anderen helfen.", learning: "Reibung zeigt dir, was wirklich funktioniert.", seen: "Andere suchen deine praktische Klarheit in schwierigen Situationen.", needs: "Fehlerfreundlichkeit und realistische Erwartungen." },
+    "3/6": { name: "Experimentierer / Vorbild", gift: "Gelebte Erfahrung reift zu glaubwürdiger Orientierung.", learning: "Dein Weg darf sich in mehreren Lebensphasen verändern.", seen: "Du wirst zunehmend als ruhiges Beispiel wahrgenommen.", needs: "Zeit, Perspektive und die Erlaubnis für Umwege." },
+    "4/1": { name: "Opportunist / Forscher", gift: "Du gibst Beziehungen Richtung aus einer festen inneren Grundlage.", learning: "Dein Einfluss wächst, wenn du deiner Basis treu bleibst.", seen: "Andere erleben dich als verbindend und standfest.", needs: "Verlässliche Beziehungen und ein klares Fundament." },
+    "4/6": { name: "Opportunist / Vorbild", gift: "Du führst über Vertrauen, Beziehung und gelebte Reife.", learning: "Nicht jede Verbindung gehört in jede Lebensphase.", seen: "Dein Umfeld erkennt in dir langfristige Orientierung.", needs: "Ein stimmiges Netzwerk und Raum zum Reifen." },
+    "5/1": { name: "Ketzer / Forscher", gift: "Du entwickelst fundierte Lösungen für komplexe Situationen.", learning: "Erwartungen brauchen Prüfung, bevor du Verantwortung übernimmst.", seen: "Andere projizieren Führung und Problemlösung auf dich.", needs: "Solide Grundlagen und klare Absprachen." },
+    "5/2": { name: "Ketzer / Eremit", gift: "Du erkennst Muster und bringst natürliche Lösungen in Unordnung.", learning: "Nicht jede Projektion ist deine Wahrheit oder Aufgabe.", seen: "Andere erleben dich als Lösungsfinder, Retter oder Projektionsfläche.", needs: "Regelmäßigen Rückzug, echte Anerkennung und klare Grenzen." },
+    "6/2": { name: "Vorbild / Eremit", gift: "Natürliche Begabung verbindet sich mit Weisheit aus gelebter Reife.", learning: "Deine Wirkung entsteht organisch, nicht unter Beweisdruck.", seen: "Andere orientieren sich an deiner ruhigen Authentizität.", needs: "Rückzug und Zeit, damit Erfahrung zu Weisheit wird." },
+    "6/3": { name: "Vorbild / Experimentierer", gift: "Du machst aus Erfahrung eine glaubwürdige, menschliche Führung.", learning: "Brüche und Übergänge sind Teil deiner Reifung.", seen: "Andere sehen Mut, Realitätssinn und spätere Gelassenheit.", needs: "Beweglichkeit, Geduld und ehrliche Reflexion." }
+  },
+  centers: {
+    Kopf: { theme: "Inspiration", defined: "Deine Inspiration hat einen verlässlichen inneren Rhythmus.", open: "Du nimmst Fragen und geistigen Druck deiner Umgebung fein wahr." },
+    Ajna: { theme: "Verstand", defined: "Deine Art zu denken und zu ordnen wirkt beständig.", open: "Du kannst viele Perspektiven halten, ohne dich vorschnell festzulegen." },
+    Kehle: { theme: "Ausdruck", defined: "Ausdruck und Manifestation haben eine konstante Färbung.", open: "Dein Timing für Worte verändert sich mit Menschen und Situationen." },
+    "G-Zentrum": { theme: "Identität", defined: "Richtung, Liebe und Identität besitzen einen stabilen Kern.", open: "Orte und Beziehungen zeigen dir unterschiedliche Facetten deiner Richtung." },
+    Ego: { theme: "Willenskraft", defined: "Willenskraft und Versprechen folgen einem verlässlichen Puls.", open: "Du musst deinen Wert nicht beweisen oder jedes Versprechen halten." },
+    Milz: { theme: "Intuition", defined: "Instinkt und Körperbewusstsein melden sich konstant im Jetzt.", open: "Du spürst Sicherheit und Unsicherheit anderer besonders deutlich." },
+    Solarplexus: { theme: "Emotion", defined: "Emotionale Wellen gehören zu deinem natürlichen Entscheidungsraum.", open: "Du verstärkst Gefühle im Feld und darfst sie wieder ziehen lassen." },
+    Sakral: { theme: "Lebenskraft", defined: "Deine Lebensenergie antwortet körperlich auf das, was vor dir liegt.", open: "Du nimmst Arbeitsenergie auf, bist aber nicht für Dauerleistung gebaut." },
+    Wurzel: { theme: "Druck", defined: "Dein Antrieb bewegt sich in einem eigenen, wiederkehrenden Takt.", open: "Äußerer Zeitdruck kann laut werden, ohne wirklich deiner zu sein." }
+  },
+  decisions: {
+    Generator: { rhythm: "Antwort vor Initiative", clarity: "Ein körperliches Ja oder Nein", watch: "Aus Pflicht weitermachen, obwohl die Energie weg ist" },
+    "Manifestierender Generator": { rhythm: "Reagieren, bewegen, korrigieren", clarity: "Resonanz plus Freiheit für Kurswechsel", watch: "Tempo mit Klarheit verwechseln" },
+    Projektor: { rhythm: "Anerkennung und Einladung", clarity: "Gesehen werden, bevor du tief führst", watch: "Energie erzwingen oder ungefragt beweisen" },
+    Manifestor: { rhythm: "Impuls, informieren, initiieren", clarity: "Ein unabhängiger innerer Bewegungsimpuls", watch: "Andere ohne Orientierung zurücklassen" },
+    Reflektor: { rhythm: "Beobachten über Zeit", clarity: "Umgebung, Austausch und ein voller Mondzyklus", watch: "Unter Druck sofort Gewissheit produzieren" }
+  },
+  dailyAlignment: {
+    Generator: { today: "Reagiere auf das, was wirklich vor dir liegt.", focus: "Wo antwortet dein Körper mit mehr Weite?", reminder: "Nicht jede Möglichkeit ist dein Ja." },
+    "Manifestierender Generator": { today: "Erlaube Bewegung, ohne den ersten Körperimpuls zu überspringen.", focus: "Welcher nächste Schritt hat echte Resonanz?", reminder: "Ein Kurswechsel darf intelligent sein." },
+    Projektor: { today: "Beobachte, wo deine Klarheit wirklich erkannt wird.", focus: "Welche Einladung fühlt sich ruhig und korrekt an?", reminder: "Du musst nicht dauernd leisten, um wertvoll zu sein." },
+    Manifestor: { today: "Gib deinem echten Impuls Raum und informiere klar.", focus: "Was möchte durch dich in Bewegung kommen?", reminder: "Frieden entsteht, wenn dein Umfeld Orientierung hat." },
+    Reflektor: { today: "Beobachten statt erzwingen.", focus: "Welche Umgebung fühlt sich heute klar an?", reminder: "Du musst nicht sofort wissen." }
+  }
+});
+
 const colors = {
   ink: "#f7f1ff",
   muted: "#b4a6c7",
@@ -137,7 +179,6 @@ const defaultChart = {
 
 drawChart(defaultChart);
 renderChartSummaryRail(defaultChart);
-loadPublicCharts();
 loadAccount();
 initializePlaceAutocomplete();
 initializeDevTools();
@@ -148,13 +189,13 @@ form.addEventListener("submit", async (event) => {
 
   const submitButton = form.querySelector("button");
   const payload = Object.fromEntries(new FormData(form).entries());
+  payload.public = false;
+  payload.savePublic = false;
 
   if (devMode) {
     payload.houseSystem = devTestData.houseSystem;
     payload.zodiacType = devTestData.zodiacType;
     payload.includeTransits = form.elements.namedItem("includeTransits")?.checked === true;
-    payload.public = false;
-    payload.savePublic = false;
   }
 
   submitButton.disabled = true;
@@ -173,8 +214,7 @@ form.addEventListener("submit", async (event) => {
     drawChart(chart);
     renderChartSummaryRail(chart);
     providerLabel.textContent = chart.isMock ? "Fallback Preview" : "Swiss Ephemeris live";
-    if (!chart.isMock && !devMode) {
-      addPublicChartFromResult(chart, payload);
+    if (!chart.isMock && currentUser && !devMode) {
       await saveProfileToAccount(chart, payload);
     }
   } catch (error) {
@@ -1034,6 +1074,11 @@ function renderReading(chart, payload) {
         </div>
       </div>
     </details>
+
+    ${renderProfileSection(chart, profileLines, profileGuide)}
+    ${renderDecisionSection(chart, typeGuide, authorityGuide)}
+    ${renderCentersSection(definedCenters, openCenters, chart.type)}
+    ${renderDailyAlignmentSection(chart)}
   `;
 }
 
@@ -1100,6 +1145,150 @@ function advancedGroup(title, description, content) {
       <div class="advanced-group-content">${content}</div>
     </details>
   `;
+}
+
+function renderProfileSection(chart, profileLines, profileGuide) {
+  const profileKey = String(chart.profile || "");
+  const content = HUMANOS_CONTENT.profiles[profileKey] || {
+    name: profileGuide.title || "Dein individuelles Profil",
+    gift: "Deine bewusste Rolle und deine natürliche Körperprägung wirken zusammen.",
+    learning: "Beobachte, wie beide Seiten deines Profils sich im Alltag ergänzen.",
+    seen: "Andere Menschen erleben oft eine andere Facette als die, die dir selbst bewusst ist.",
+    needs: "Raum, um deine Rolle ohne fremde Erwartungen zu entdecken."
+  };
+  const reading = profileLines.description || profileGuide.text || "Dein Profil beschreibt, wie du lernst, wirkst und in Beziehung trittst.";
+
+  return `
+    <section class="humanos-deep-section profile-deep-section" id="profile-section">
+      <div class="deep-section-heading">
+        <span class="eyebrow">02 · Dein Profil verstehen</span>
+        <h3>Dein Profil <em>${escapeHtml(profileKey || "–/–")}</em></h3>
+        <strong>${escapeHtml(content.name)}</strong>
+        <p>${escapeHtml(reading)}</p>
+      </div>
+      <div class="profile-portal" aria-hidden="true">
+        <div class="profile-orbits"><span>${escapeHtml(profileKey || "?")}</span></div>
+        <div class="profile-portal-badge"><small>Dein Profil</small><b>${escapeHtml(profileKey || "–/–")}</b><span>${escapeHtml(content.name)}</span></div>
+      </div>
+      <div class="profile-insight-grid">
+        ${deepInsightCard("✦", "Deine Gabe", content.gift)}
+        ${deepInsightCard("↗", "Deine Lernkurve", content.learning)}
+        ${deepInsightCard("◎", "Wie andere dich sehen", content.seen)}
+        ${deepInsightCard("♡", "Was du brauchst", content.needs)}
+      </div>
+    </section>
+  `;
+}
+
+function renderDecisionSection(chart, typeGuide, authorityGuide) {
+  const decision = HUMANOS_CONTENT.decisions[chart.type] || {
+    rhythm: chart.strategy || "Strategie vor Aktion",
+    clarity: authorityGuide.text || "Klarheit entsteht außerhalb von mentalem Druck.",
+    watch: chart.notSelf || "Fremde Erwartungen mit eigener Wahrheit verwechseln"
+  };
+
+  return `
+    <section class="humanos-deep-section decision-deep-section" id="decision-design">
+      <div class="deep-section-heading decision-heading">
+        <span class="eyebrow">03 · Dein Design verstehen</span>
+        <h3>So triffst du Entscheidungen im <em>Einklang</em> mit deinem Design</h3>
+        <p>Typ, Strategie und Autorität bilden gemeinsam deine innere Navigation. Sie helfen dir, Klarheit nicht zu erzwingen, sondern wiederzuerkennen.</p>
+      </div>
+      <div class="decision-primary-grid">
+        ${decisionCoreCard("01", "Typ", chart.type, typeGuide.text, "◉")}
+        ${decisionCoreCard("02", "Strategie", chart.strategy, decision.rhythm, "≋")}
+        ${decisionCoreCard("03", "Autorität", chart.authority, authorityGuide.text, "☾")}
+      </div>
+      <div class="decision-practice-grid">
+        ${decisionPracticeCard("⌁", "Dein natürlicher Rhythmus", decision.rhythm)}
+        ${decisionPracticeCard("✧", "Was dir Klarheit bringt", decision.clarity)}
+        ${decisionPracticeCard("△", "Worauf du achten solltest", decision.watch)}
+      </div>
+    </section>
+  `;
+}
+
+function renderCentersSection(definedCenters, openCenters, type) {
+  const defined = new Set(Array.isArray(definedCenters) ? definedCenters : []);
+  const allOpen = type === "Reflektor" && defined.size === 0;
+  const centerCards = centerLayout.map((center) => {
+    const content = HUMANOS_CONTENT.centers[center.name];
+    const active = defined.has(center.name);
+    return `
+      <article class="center-reading-card ${active ? "defined" : "open"}">
+        <div class="center-shape ${escapeHtml(center.shape)}" aria-hidden="true"></div>
+        <div><span>${active ? "definiert" : "offen"}</span><h4>${escapeHtml(center.name)}</h4><b>${escapeHtml(content?.theme || "Energie")}</b></div>
+        <p>${escapeHtml(active ? content?.defined : content?.open)}</p>
+      </article>
+    `;
+  }).join("");
+
+  return `
+    <section class="humanos-deep-section centers-deep-section" id="centers-overview">
+      <div class="deep-section-heading">
+        <span class="eyebrow">04 · Zentren & Weisheit</span>
+        <h3>Deine Zentren im <em>Überblick</em></h3>
+        <p>${allOpen
+          ? "Alle neun Zentren sind offen. Deine besondere Intelligenz liegt darin, Menschen und Umgebungen differenziert wahrzunehmen."
+          : `${defined.size} Center sind definiert und ${openCenters.length} offen. Definierte Center zeigen Konstanz; offene Center zeigen Sensibilität und Lernräume.`}</p>
+      </div>
+      <div class="center-reading-grid">${centerCards}</div>
+      <aside class="openness-reading ${allOpen ? "reflector" : "mixed"}">
+        <div><span class="openness-orb" aria-hidden="true"></span></div>
+        <div>
+          <span class="eyebrow">${allOpen ? "Reflektor-Lesung" : "Deine offene Intelligenz"}</span>
+          <h4>${allOpen ? "Offenheit ist keine Leere. Sie ist Intelligenz." : "Offenheit wird durch Beobachtung zu Weisheit."}</h4>
+          <p>${allOpen
+            ? "Du nimmst auf, ohne alles dauerhaft tragen zu müssen. Mit Zeit und der richtigen Umgebung erkennst du Muster, die anderen verborgen bleiben."
+            : "Offene Center sind keine Schwäche. Sie zeigen, wo du andere besonders fein wahrnimmst und mit der Zeit tiefe Weisheit entwickeln kannst."}</p>
+        </div>
+        <ol><li><b>01</b><span>Wahrnehmen</span></li><li><b>02</b><span>Reflektieren</span></li><li><b>03</b><span>Verstehen</span></li></ol>
+      </aside>
+    </section>
+  `;
+}
+
+function renderDailyAlignmentSection(chart) {
+  const daily = HUMANOS_CONTENT.dailyAlignment[chart.type] || {
+    today: "Beobachte heute, was sich ohne Druck stimmig anfühlt.",
+    focus: "Wo entsteht echte innere Weite?",
+    reminder: "Du musst nicht sofort wissen."
+  };
+
+  return `
+    <section class="humanos-deep-section daily-deep-section" id="daily-alignment">
+      <div class="daily-copy">
+        <span class="eyebrow">05 · Daily Alignment</span>
+        <h3>Dein täglicher <em>kosmischer Check-in</em></h3>
+        <p>Daily Alignment verbindet später deinen gespeicherten Chart, Typ, Profil, Autorität, Transite und Mondphase zu einem ruhigen persönlichen Tagesimpuls.</p>
+        <div class="daily-prompt-grid">
+          ${dailyPromptCard("Heute", daily.today)}
+          ${dailyPromptCard("Fokus", daily.focus)}
+          ${dailyPromptCard("Erinnerung", daily.reminder)}
+        </div>
+        <span class="teaser-cta">Daily Alignment vormerken</span>
+      </div>
+      <aside class="daily-phone" aria-label="Daily Alignment Vorschau">
+        <span class="mini-orb"></span><small>myhumanos · heute</small><h4>${escapeHtml(daily.today)}</h4><p>${escapeHtml(daily.focus)}</p><b>Coming soon</b>
+      </aside>
+    </section>
+  `;
+}
+
+function deepInsightCard(icon, title, text) {
+  return `<article><span aria-hidden="true">${icon}</span><div><h4>${escapeHtml(title)}</h4><p>${escapeHtml(text)}</p></div></article>`;
+}
+
+function decisionCoreCard(index, label, value, text, icon) {
+  return `<article><span>${escapeHtml(index)} · ${escapeHtml(label)}</span><div class="decision-icon" aria-hidden="true">${icon}</div><h4>${escapeHtml(displayValue(value))}</h4><p>${escapeHtml(text)}</p></article>`;
+}
+
+function decisionPracticeCard(icon, title, text) {
+  return `<article><span aria-hidden="true">${icon}</span><div><h4>${escapeHtml(title)}</h4><p>${escapeHtml(text)}</p></div></article>`;
+}
+
+function dailyPromptCard(label, text) {
+  return `<article><span>${escapeHtml(label)}</span><p>${escapeHtml(text)}</p></article>`;
 }
 
 function todayTransitSection(transits, chart, openCenters) {
